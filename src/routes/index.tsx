@@ -1,7 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { getChannelVideos, type Video } from "@/lib/youtube.functions";
-import { Play, Eye, Star, Youtube, Sparkles, Gamepad2 } from "lucide-react";
+import { Play, Eye, Star, Youtube, Sparkles, Gamepad2, ChevronRight, ChevronLeft } from "lucide-react";
 import { AdBanner } from "@/components/AdBanner";
+
+const PAGE_SIZE = 12;
 
 export const Route = createFileRoute("/")({
   loader: () => getChannelVideos(),
@@ -33,6 +36,16 @@ function formatViews(v: string) {
 function Index() {
   const { videos, channelTitle } = Route.useLoaderData();
   const [featured, ...rest] = videos;
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(rest.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageVideos = rest.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const goTo = (p: number) => {
+    setPage(p);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 400, behavior: "smooth" });
+    }
+  };
 
   return (
     <div dir="rtl" className="min-h-screen">
@@ -139,7 +152,7 @@ function Index() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {rest.map((v: Video) => (
+          {pageVideos.map((v: Video) => (
             <Link
               key={v.id}
               to="/watch/$videoId"
