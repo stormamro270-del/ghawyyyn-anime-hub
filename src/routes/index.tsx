@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { getChannelVideos } from "@/lib/youtube.functions";
+import { getChannelVideos, type Video } from "@/lib/youtube.functions";
 import { Play, Eye, Star, Youtube, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/")({
