@@ -1,7 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { getChannelVideos, type Video } from "@/lib/youtube.functions";
-import { Play, Eye, Star, Youtube, Sparkles, Gamepad2 } from "lucide-react";
+import { Play, Eye, Star, Youtube, Sparkles, Gamepad2, ChevronRight, ChevronLeft } from "lucide-react";
 import { AdBanner } from "@/components/AdBanner";
+
+const PAGE_SIZE = 12;
 
 export const Route = createFileRoute("/")({
   loader: () => getChannelVideos(),
@@ -33,6 +36,16 @@ function formatViews(v: string) {
 function Index() {
   const { videos, channelTitle } = Route.useLoaderData();
   const [featured, ...rest] = videos;
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(rest.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageVideos = rest.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const goTo = (p: number) => {
+    setPage(p);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 400, behavior: "smooth" });
+    }
+  };
 
   return (
     <div dir="rtl" className="min-h-screen">
@@ -139,7 +152,7 @@ function Index() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {rest.map((v: Video) => (
+          {pageVideos.map((v: Video) => (
             <Link
               key={v.id}
               to="/watch/$videoId"
@@ -187,7 +200,58 @@ function Index() {
             </Link>
           ))}
         </div>
+
+        {totalPages > 1 && (
+          <nav
+            className="mt-10 flex flex-wrap items-center justify-center gap-2"
+            dir="ltr"
+            aria-label="ترقيم الصفحات"
+          >
+            <button
+              type="button"
+              onClick={() => goTo(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="flex items-center gap-1 rounded-lg bg-secondary/60 px-3 py-2 text-sm font-semibold transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronRight className="h-4 w-4" />
+              السابق
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => goTo(p)}
+                aria-current={p === currentPage ? "page" : undefined}
+                className={
+                  p === currentPage
+                    ? "min-w-10 rounded-lg px-3 py-2 text-sm font-bold text-primary-foreground"
+                    : "min-w-10 rounded-lg bg-secondary/60 px-3 py-2 text-sm font-semibold transition hover:bg-secondary"
+                }
+                style={
+                  p === currentPage
+                    ? {
+                        background: "var(--gradient-neon)",
+                        boxShadow: "var(--glow-primary)",
+                      }
+                    : undefined
+                }
+              >
+                {p}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => goTo(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-1 rounded-lg bg-secondary/60 px-3 py-2 text-sm font-semibold transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              التالي
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+          </nav>
+        )}
       </section>
+
 
       <footer className="border-t border-border/50 py-8 text-center text-sm text-muted-foreground">
         <p>
