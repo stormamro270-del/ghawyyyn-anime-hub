@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { getChannelVideos, type Video } from "@/lib/youtube.functions";
-import { Play, Eye, Star, Youtube, Sparkles } from "lucide-react";
+import { Play, Eye, Star, Youtube, Sparkles, Gamepad2 } from "lucide-react";
+import { AdBanner } from "@/components/AdBanner";
 
 export const Route = createFileRoute("/")({
   loader: () => getChannelVideos(),
@@ -54,16 +55,25 @@ function Index() {
               </p>
             </div>
           </div>
-          <a
-            href="https://www.youtube.com/@GhawyynAnime?sub_confirmation=1"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground transition hover:brightness-110"
-            style={{ boxShadow: "0 0 20px oklch(0.62 0.24 25 / 0.4)" }}
-          >
-            <Youtube className="h-4 w-4" />
-            اشترك
-          </a>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/games"
+              className="flex items-center gap-2 rounded-lg bg-secondary px-3 py-2 text-sm font-semibold transition hover:bg-secondary/70"
+            >
+              <Gamepad2 className="h-4 w-4" />
+              <span className="hidden sm:inline">ألعاب</span>
+            </Link>
+            <a
+              href="https://www.youtube.com/@GhawyynAnime?sub_confirmation=1"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 rounded-lg bg-destructive px-3 py-2 text-sm font-semibold text-destructive-foreground transition hover:brightness-110"
+              style={{ boxShadow: "0 0 20px oklch(0.62 0.24 25 / 0.4)" }}
+            >
+              <Youtube className="h-4 w-4" />
+              <span className="hidden sm:inline">اشترك</span>
+            </a>
+          </div>
         </div>
       </header>
 
@@ -114,6 +124,9 @@ function Index() {
           </div>
         </section>
       )}
+
+      {/* Grid */}
+      <AdBanner className="container mx-auto px-4" />
 
       {/* Grid */}
       <section className="container mx-auto px-4 py-10">
