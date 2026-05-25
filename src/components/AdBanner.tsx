@@ -31,7 +31,7 @@ export function AdBanner({
       const s = document.createElement("script");
       s.id = scriptId;
       s.async = true;
-      s.src = `https://pagead2.googlesystems.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`;
+      s.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`;
       s.crossOrigin = "anonymous";
       document.head.appendChild(s);
     }
