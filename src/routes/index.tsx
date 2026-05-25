@@ -159,6 +159,30 @@ function Index() {
           <div className="h-px flex-1 bg-gradient-to-r from-accent/60 to-transparent" />
         </div>
 
+        {shortsCount > 0 && (
+          <div className="mb-6 flex justify-center">
+            <button
+              type="button"
+              onClick={toggleShorts}
+              aria-pressed={showShorts}
+              className={
+                showShorts
+                  ? "flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold text-primary-foreground transition"
+                  : "flex items-center gap-2 rounded-full border border-primary/40 bg-secondary/40 px-5 py-2 text-sm font-semibold text-foreground transition hover:bg-secondary"
+              }
+              style={
+                showShorts
+                  ? { background: "var(--gradient-neon)", boxShadow: "var(--glow-primary)" }
+                  : undefined
+              }
+            >
+              <Zap className={showShorts ? "h-4 w-4" : "h-4 w-4 text-primary"} />
+              {showShorts ? `إخفاء الشورت (${shortsCount})` : `إظهار الشورت (${shortsCount})`}
+            </button>
+          </div>
+        )}
+
+
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {pageVideos.map((v: Video) => (
             <Link
