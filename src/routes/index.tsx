@@ -200,7 +200,58 @@ function Index() {
             </Link>
           ))}
         </div>
+
+        {totalPages > 1 && (
+          <nav
+            className="mt-10 flex flex-wrap items-center justify-center gap-2"
+            dir="ltr"
+            aria-label="ترقيم الصفحات"
+          >
+            <button
+              type="button"
+              onClick={() => goTo(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="flex items-center gap-1 rounded-lg bg-secondary/60 px-3 py-2 text-sm font-semibold transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronRight className="h-4 w-4" />
+              السابق
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => goTo(p)}
+                aria-current={p === currentPage ? "page" : undefined}
+                className={
+                  p === currentPage
+                    ? "min-w-10 rounded-lg px-3 py-2 text-sm font-bold text-primary-foreground"
+                    : "min-w-10 rounded-lg bg-secondary/60 px-3 py-2 text-sm font-semibold transition hover:bg-secondary"
+                }
+                style={
+                  p === currentPage
+                    ? {
+                        background: "var(--gradient-neon)",
+                        boxShadow: "var(--glow-primary)",
+                      }
+                    : undefined
+                }
+              >
+                {p}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => goTo(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-1 rounded-lg bg-secondary/60 px-3 py-2 text-sm font-semibold transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              التالي
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+          </nav>
+        )}
       </section>
+
 
       <footer className="border-t border-border/50 py-8 text-center text-sm text-muted-foreground">
         <p>
