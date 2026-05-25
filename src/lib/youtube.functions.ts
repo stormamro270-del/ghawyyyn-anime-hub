@@ -71,7 +71,13 @@ export const getChannelVideos = createServerFn({ method: "GET" }).handler(
       const id = r.videoId;
       if (!id || seen.has(id)) continue;
 
-      // Skip Shorts: they have lengthText < 60s or thumbnailOverlayTimeStatusRenderer.style === "SHORTS"
+      // --- Multi-signal Shorts detection ---
+      const blob = JSON.stringify(r);
+
+      // 1) Any /shorts/ URL or reelWatchEndpoint anywhere in the renderer
+      if (blob.includes("/shorts/") || blob.includes("reelWatchEndpoint")) continue;
+
+      // 2) thumbnailOverlay marked SHORTS
       const overlays = r.thumbnailOverlays ?? [];
       const isShortOverlay = overlays.some(
         (o: any) =>
@@ -80,15 +86,35 @@ export const getChannelVideos = createServerFn({ method: "GET" }).handler(
       );
       if (isShortOverlay) continue;
 
+      // 3) Badges labelled SHORTS
+      const badges = r.badges ?? [];
+      const isShortBadge = badges.some((b: any) => {
+        const label = b?.metadataBadgeRenderer?.label ?? "";
+        const style = b?.metadataBadgeRenderer?.style ?? "";
+        return /short/i.test(label) || /SHORTS/.test(style);
+      });
+      if (isShortBadge) continue;
+
+      // 4) navigationEndpoint must be a normal /watch URL
+      const watchUrl =
+        r.navigationEndpoint?.commandMetadata?.webCommandMetadata?.url ?? "";
+      if (watchUrl && !watchUrl.startsWith("/watch")) continue;
+
+      // 5) Duration: drop anything < 65s. Missing duration = Short/live/upcoming.
       const lengthText =
-        r.lengthText?.simpleText ?? r.lengthText?.accessibility?.accessibilityData?.label ?? "";
-      // Parse "0:45" => 45s
+        r.lengthText?.simpleText ??
+        r.lengthText?.accessibility?.accessibilityData?.label ??
+        "";
+      if (!lengthText) continue;
       const parts = lengthText.split(":").map((x: string) => parseInt(x, 10));
       if (parts.length === 2 && !parts.some(isNaN)) {
         const secs = parts[0] * 60 + parts[1];
         if (secs > 0 && secs < 65) continue;
       }
-      if (!lengthText) continue; // unknown duration => likely short/live
+
+      // 6) "watching now" live indicator in short view count text
+      const shortViews = r.shortViewCountText?.simpleText ?? "";
+      if (/watching/i.test(shortViews)) continue;
 
       seen.add(id);
       const title = r.title?.runs?.[0]?.text ?? r.title?.simpleText ?? "";
