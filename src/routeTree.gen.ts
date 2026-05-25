@@ -9,9 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as GamesRouteImport } from './routes/games'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WatchVideoIdRouteImport } from './routes/watch.$videoId'
+import { Route as GamesTicTacToeRouteImport } from './routes/games.tic-tac-toe'
+import { Route as GamesSnakeRouteImport } from './routes/games.snake'
+import { Route as GamesAppleRouteImport } from './routes/games.apple'
 
+const GamesRoute = GamesRouteImport.update({
+  id: '/games',
+  path: '/games',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -22,35 +31,89 @@ const WatchVideoIdRoute = WatchVideoIdRouteImport.update({
   path: '/watch/$videoId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GamesTicTacToeRoute = GamesTicTacToeRouteImport.update({
+  id: '/tic-tac-toe',
+  path: '/tic-tac-toe',
+  getParentRoute: () => GamesRoute,
+} as any)
+const GamesSnakeRoute = GamesSnakeRouteImport.update({
+  id: '/snake',
+  path: '/snake',
+  getParentRoute: () => GamesRoute,
+} as any)
+const GamesAppleRoute = GamesAppleRouteImport.update({
+  id: '/apple',
+  path: '/apple',
+  getParentRoute: () => GamesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/games': typeof GamesRouteWithChildren
+  '/games/apple': typeof GamesAppleRoute
+  '/games/snake': typeof GamesSnakeRoute
+  '/games/tic-tac-toe': typeof GamesTicTacToeRoute
   '/watch/$videoId': typeof WatchVideoIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/games': typeof GamesRouteWithChildren
+  '/games/apple': typeof GamesAppleRoute
+  '/games/snake': typeof GamesSnakeRoute
+  '/games/tic-tac-toe': typeof GamesTicTacToeRoute
   '/watch/$videoId': typeof WatchVideoIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/games': typeof GamesRouteWithChildren
+  '/games/apple': typeof GamesAppleRoute
+  '/games/snake': typeof GamesSnakeRoute
+  '/games/tic-tac-toe': typeof GamesTicTacToeRoute
   '/watch/$videoId': typeof WatchVideoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/watch/$videoId'
+  fullPaths:
+    | '/'
+    | '/games'
+    | '/games/apple'
+    | '/games/snake'
+    | '/games/tic-tac-toe'
+    | '/watch/$videoId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/watch/$videoId'
-  id: '__root__' | '/' | '/watch/$videoId'
+  to:
+    | '/'
+    | '/games'
+    | '/games/apple'
+    | '/games/snake'
+    | '/games/tic-tac-toe'
+    | '/watch/$videoId'
+  id:
+    | '__root__'
+    | '/'
+    | '/games'
+    | '/games/apple'
+    | '/games/snake'
+    | '/games/tic-tac-toe'
+    | '/watch/$videoId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  GamesRoute: typeof GamesRouteWithChildren
   WatchVideoIdRoute: typeof WatchVideoIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/games': {
+      id: '/games'
+      path: '/games'
+      fullPath: '/games'
+      preLoaderRoute: typeof GamesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -65,11 +128,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WatchVideoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/games/tic-tac-toe': {
+      id: '/games/tic-tac-toe'
+      path: '/tic-tac-toe'
+      fullPath: '/games/tic-tac-toe'
+      preLoaderRoute: typeof GamesTicTacToeRouteImport
+      parentRoute: typeof GamesRoute
+    }
+    '/games/snake': {
+      id: '/games/snake'
+      path: '/snake'
+      fullPath: '/games/snake'
+      preLoaderRoute: typeof GamesSnakeRouteImport
+      parentRoute: typeof GamesRoute
+    }
+    '/games/apple': {
+      id: '/games/apple'
+      path: '/apple'
+      fullPath: '/games/apple'
+      preLoaderRoute: typeof GamesAppleRouteImport
+      parentRoute: typeof GamesRoute
+    }
   }
 }
 
+interface GamesRouteChildren {
+  GamesAppleRoute: typeof GamesAppleRoute
+  GamesSnakeRoute: typeof GamesSnakeRoute
+  GamesTicTacToeRoute: typeof GamesTicTacToeRoute
+}
+
+const GamesRouteChildren: GamesRouteChildren = {
+  GamesAppleRoute: GamesAppleRoute,
+  GamesSnakeRoute: GamesSnakeRoute,
+  GamesTicTacToeRoute: GamesTicTacToeRoute,
+}
+
+const GamesRouteWithChildren = GamesRoute._addFileChildren(GamesRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  GamesRoute: GamesRouteWithChildren,
   WatchVideoIdRoute: WatchVideoIdRoute,
 }
 export const routeTree = rootRouteImport

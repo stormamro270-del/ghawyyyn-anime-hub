@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { getChannelVideos, type Video } from "@/lib/youtube.functions";
-import { Play, Eye, Star, Youtube, Sparkles } from "lucide-react";
+import { Play, Eye, Star, Youtube, Sparkles, Gamepad2 } from "lucide-react";
+import { AdBanner } from "@/components/AdBanner";
 
 export const Route = createFileRoute("/")({
   loader: () => getChannelVideos(),
