@@ -79,9 +79,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { httpEquiv: "Referrer-Policy", content: "strict-origin-when-cross-origin" },
       { name: "robots", content: "index, follow" },
       { property: "og:title", content: "غاويين انمى" },
-      { property: "og:description", content: "ملخصات أنمي وألعاب بستايل سايبربانك" },
+      { property: "og:description", content: "ملخصات أنمي ومانهوا + ألعاب أنمي بسيطة" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "غاويين انمى" },
+      { name: "twitter:description", content: "ملخصات أنمي ومانهوا + ألعاب أنمي بسيطة" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/RkgauelDtdhhpy3TiZlIkS7rk852/social-images/social-1779678706396-channels4_profile.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/RkgauelDtdhhpy3TiZlIkS7rk852/social-images/social-1779678706396-channels4_profile.webp" },
     ],
     links: [
       {
