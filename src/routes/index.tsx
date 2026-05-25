@@ -34,8 +34,12 @@ function formatViews(v: string) {
 }
 
 function Index() {
-  const { videos, channelTitle } = Route.useLoaderData();
-  const [featured, ...rest] = videos;
+  const { videos: allVideos, channelTitle } = Route.useLoaderData();
+  const [showShorts, setShowShorts] = useState(false);
+  const videos = showShorts ? allVideos : allVideos.filter((v: Video) => !v.isShort);
+  const shortsCount = allVideos.filter((v: Video) => v.isShort).length;
+  const featured = videos.find((v: Video) => !v.isShort) ?? videos[0];
+  const rest = videos.filter((v: Video) => v.id !== featured?.id);
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(rest.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -45,6 +49,10 @@ function Index() {
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 400, behavior: "smooth" });
     }
+  };
+  const toggleShorts = () => {
+    setShowShorts((v) => !v);
+    setPage(1);
   };
 
   return (
