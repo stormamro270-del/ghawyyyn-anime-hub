@@ -12,80 +12,69 @@ export type Video = {
   rating: string;
 };
 
-function parseViews(text: string): string {
-  // "1.2M views" / "12K views" / "1,234 views" / "1.2 ألف مشاهدة"
-  const m = text.match(/([\d.,]+)\s*([KMB]?)/i);
-  if (!m) return "0";
-  const num = parseFloat(m[1].replace(/,/g, ""));
-  const suffix = m[2].toUpperCase();
-  const mult = suffix === "B" ? 1e9 : suffix === "M" ? 1e6 : suffix === "K" ? 1e3 : 1;
-  return Math.round(num * mult).toString();
+async function resolveChannelId(): Promise<string | null> {
+  try {
+    const res = await fetch(`https://www.youtube.com/${CHANNEL_HANDLE}`, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+    });
+    const html = await res.text();
+    const m =
+      html.match(/"channelId":"(UC[\w-]{20,})"/) ||
+      html.match(/<meta itemprop="identifier" content="(UC[\w-]{20,})"/) ||
+      html.match(/channel\/(UC[\w-]{20,})/);
+    return m ? m[1] : null;
+  } catch {
+    return null;
+  }
 }
 
 export const getChannelVideos = createServerFn({ method: "GET" }).handler(
   async (): Promise<{ videos: Video[]; channelTitle: string }> => {
+    const channelId = await resolveChannelId();
+    if (!channelId) return { videos: [], channelTitle: "غاويين انمى" };
+
     const res = await fetch(
-      `https://www.youtube.com/${CHANNEL_HANDLE}/videos`,
+      `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`,
       {
         headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "User-Agent": "Mozilla/5.0",
           "Accept-Language": "en-US,en;q=0.9",
         },
       }
     );
-    const html = await res.text();
+    const xml = await res.text();
 
-    let channelTitle = "غاويين انمى";
-    const titleMatch = html.match(/<meta\s+property="og:title"\s+content="([^"]+)"/);
-    if (titleMatch) channelTitle = titleMatch[1];
-
-    const m = html.match(/var ytInitialData = (\{[\s\S]*?\});<\/script>/);
-    if (!m) return { videos: [], channelTitle };
-
-    let data: any;
-    try {
-      data = JSON.parse(m[1]);
-    } catch {
-      return { videos: [], channelTitle };
-    }
-
-    const tabs =
-      data?.contents?.twoColumnBrowseResultsRenderer?.tabs ?? [];
-    const videosTab = tabs.find(
-      (t: any) => t?.tabRenderer?.title === "Videos" || t?.tabRenderer?.selected
-    );
-    const items =
-      videosTab?.tabRenderer?.content?.richGridRenderer?.contents ?? [];
+    const channelTitleMatch = xml.match(/<title>([^<]+)<\/title>/);
+    const channelTitle = channelTitleMatch ? channelTitleMatch[1] : "غاويين انمى";
 
     const videos: Video[] = [];
-    for (const item of items) {
-      const r = item?.richItemRenderer?.content?.videoRenderer;
-      if (!r) continue;
-      const id = r.videoId;
+    const entryRegex = /<entry>([\s\S]*?)<\/entry>/g;
+    let entry: RegExpExecArray | null;
+    while ((entry = entryRegex.exec(xml)) !== null) {
+      const block = entry[1];
+      const id = block.match(/<yt:videoId>([^<]+)<\/yt:videoId>/)?.[1];
       if (!id) continue;
-      const title =
-        r.title?.runs?.[0]?.text ?? r.title?.simpleText ?? "";
-      const thumbs = r.thumbnail?.thumbnails ?? [];
-      const thumbnail =
-        thumbs[thumbs.length - 1]?.url ||
-        `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
-      const viewsText =
-        r.viewCountText?.simpleText ??
-        r.shortViewCountText?.simpleText ??
-        "0";
-      const published = r.publishedTimeText?.simpleText ?? "";
+      const title = block.match(/<title>([^<]+)<\/title>/)?.[1] ?? "";
+      const published = block.match(/<published>([^<]+)<\/published>/)?.[1] ?? "";
       const description =
-        r.descriptionSnippet?.runs?.map((x: any) => x.text).join("") ?? "";
+        block.match(/<media:description>([\s\S]*?)<\/media:description>/)?.[1] ?? "";
+      const views =
+        block.match(/views="(\d+)"/)?.[1] ?? "0";
+      const rating =
+        block.match(/average="([\d.]+)"/)?.[1] ?? "";
 
       videos.push({
         id,
         title,
         description: description.slice(0, 280),
-        thumbnail,
-        published,
-        views: parseViews(viewsText),
-        rating: "",
+        thumbnail: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+        published: published.slice(0, 10),
+        views,
+        rating: rating ? Number(rating).toFixed(1) : "",
       });
     }
 
