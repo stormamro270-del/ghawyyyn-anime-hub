@@ -31,7 +31,6 @@ function walk(node: any, out: any[]) {
   if (
     node.videoRenderer ||
     node.gridVideoRenderer ||
-    node.shortsLockupViewModel ||
     node.lockupViewModel
   ) {
     out.push(node);
@@ -182,28 +181,6 @@ function buildFromLockup(lm: any): { video: Video; lengthSecs: number } | null {
       rating: "",
       isShort: false,
     },
-  };
-}
-
-function buildFromShortsLockup(s: any): Video | null {
-  const id =
-    s.onTap?.innertubeCommand?.reelWatchEndpoint?.videoId ??
-    s.entityId?.match?.(/([\w-]{11})/)?.[1];
-  if (!id) return null;
-  const title = s.overlayMetadata?.primaryText?.content ?? s.accessibilityText ?? "";
-  const thumb =
-    s.thumbnail?.sources?.[s.thumbnail.sources.length - 1]?.url ||
-    `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
-  const viewsText = s.overlayMetadata?.secondaryText?.content ?? "0";
-  return {
-    id,
-    title,
-    description: "",
-    thumbnail: thumb,
-    published: "",
-    views: parseViews(viewsText),
-    rating: "",
-    isShort: true,
   };
 }
 
