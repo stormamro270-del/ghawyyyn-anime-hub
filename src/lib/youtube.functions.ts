@@ -229,12 +229,37 @@ function buildFromVideoRenderer(r: any): Video | null {
   };
 }
 
+function addRegularVideos(data: any, videos: Video[], seen: Set<string>) {
+  const wrappers: any[] = [];
+  walk(data, wrappers);
+  for (const w of wrappers) {
+    if (w.lockupViewModel) {
+      const built = buildFromLockup(w.lockupViewModel);
+      if (!built) continue;
+      if (built.lengthSecs > 0 && built.lengthSecs < 65) continue;
+      if (seen.has(built.video.id)) continue;
+      seen.add(built.video.id);
+      videos.push(built.video);
+      continue;
+    }
+    const r = w.videoRenderer || w.gridVideoRenderer;
+    if (!r) continue;
+    const watchUrl = r.navigationEndpoint?.commandMetadata?.webCommandMetadata?.url ?? "";
+    if (watchUrl && !watchUrl.startsWith("/watch")) continue;
+    const lengthText =
+      r.lengthText?.simpleText ?? r.lengthText?.accessibility?.accessibilityData?.label ?? "";
+    const secs = parseDuration(lengthText);
+    if (secs > 0 && secs < 65) continue;
+    const v = buildFromVideoRenderer(r);
+    if (!v || seen.has(v.id)) continue;
+    seen.add(v.id);
+    videos.push(v);
+  }
+}
+
 export const getChannelVideos = createServerFn({ method: "GET" }).handler(
   async (): Promise<{ videos: Video[]; channelTitle: string }> => {
-    const [videosTab, shortsTab] = await Promise.all([
-      fetchTab("videos"),
-      fetchTab("shorts"),
-    ]);
+    const videosTab = await fetchTab("videos");
 
     let channelTitle = "غاويين انمى";
     const tm = videosTab.html.match(/<meta\s+property="og:title"\s+content="([^"]+)"/);
@@ -246,62 +271,16 @@ export const getChannelVideos = createServerFn({ method: "GET" }).handler(
     // --- Regular videos tab (lockupViewModel or legacy videoRenderer) ---
     const vData = extractData(videosTab.html);
     if (vData) {
-      const wrappers: any[] = [];
-      walk(vData, wrappers);
-      for (const w of wrappers) {
-        if (w.lockupViewModel) {
-          const built = buildFromLockup(w.lockupViewModel);
-          if (!built) continue;
-          // skip shorts by duration (<65s)
-          if (built.lengthSecs > 0 && built.lengthSecs < 65) continue;
-          if (seen.has(built.video.id)) continue;
-          seen.add(built.video.id);
-          videos.push(built.video);
-          continue;
-        }
-        const r = w.videoRenderer || w.gridVideoRenderer;
-        if (!r) continue;
-        const watchUrl = r.navigationEndpoint?.commandMetadata?.webCommandMetadata?.url ?? "";
-        if (watchUrl && !watchUrl.startsWith("/watch")) continue;
-        const lengthText =
-          r.lengthText?.simpleText ?? r.lengthText?.accessibility?.accessibilityData?.label ?? "";
-        const secs = parseDuration(lengthText);
-        if (secs > 0 && secs < 65) continue;
-        const v = buildFromVideoRenderer(r);
-        if (!v || seen.has(v.id)) continue;
-        seen.add(v.id);
-        videos.push(v);
-      }
-    }
-
-    // --- Shorts tab ---
-    const sData = extractData(shortsTab.html);
-    if (sData) {
-      const wrappers: any[] = [];
-      walk(sData, wrappers);
-      for (const w of wrappers) {
-        if (w.shortsLockupViewModel) {
-          const v = buildFromShortsLockup(w.shortsLockupViewModel);
-          if (v && !seen.has(v.id)) {
-            seen.add(v.id);
-            videos.push(v);
-          }
-          continue;
-        }
-        if (w.lockupViewModel) {
-          const built = buildFromLockup(w.lockupViewModel);
-          if (built && !seen.has(built.video.id)) {
-            seen.add(built.video.id);
-            videos.push({ ...built.video, isShort: true });
-          }
-          continue;
-        }
-        const r = w.videoRenderer || w.gridVideoRenderer;
-        const v = r ? buildFromVideoRenderer(r) : null;
-        if (v && !seen.has(v.id)) {
-          seen.add(v.id);
-          videos.push({ ...v, isShort: true });
-        }
+      addRegularVideos(vData, videos, seen);
+      const config = extractYoutubeConfig(videosTab.html);
+      let token = findContinuationToken(vData);
+      for (let page = 0; config && token && page < 12; page += 1) {
+        const nextData = await fetchContinuation(token, config);
+        if (!nextData) break;
+        const before = videos.length;
+        addRegularVideos(nextData, videos, seen);
+        token = findContinuationToken(nextData);
+        if (videos.length === before) break;
       }
     }
 
