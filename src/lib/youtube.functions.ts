@@ -30,16 +30,72 @@ function findVideoRenderers(node: any, out: any[]) {
   }
   if (node.videoRenderer || node.gridVideoRenderer || node.shortsLockupViewModel) {
     out.push(node);
+function findVideoRenderers(node: any, out: any[]) {
+  if (!node || typeof node !== "object") return;
+  if (Array.isArray(node)) {
+    for (const x of node) findVideoRenderers(x, out);
+    return;
+  }
+  if (
+    node.videoRenderer ||
+    node.gridVideoRenderer ||
+    node.shortsLockupViewModel ||
+    node.lockupViewModel
+  ) {
+    out.push(node);
   }
   for (const k of Object.keys(node)) findVideoRenderers(node[k], out);
 }
 
-async function fetchTab(path: string): Promise<{ html: string }> {
-  const res = await fetch(`https://www.youtube.com/${CHANNEL_HANDLE}/${path}?hl=en&persist_hl=1`, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      "Accept-Language": "en-US,en;q=0.9",
+function buildFromLockup(lm: any): { video: Video; lengthSecs: number } | null {
+  if (lm.contentType && lm.contentType !== "LOCKUP_CONTENT_TYPE_VIDEO") return null;
+  const id = lm.contentId;
+  if (!id) return null;
+  const meta = lm.metadata?.lockupMetadataViewModel;
+  const title = meta?.title?.content ?? "";
+  const rows = meta?.metadata?.contentMetadataViewModel?.metadataRows ?? [];
+  const parts: string[] = [];
+  for (const r of rows) {
+    for (const p of r.metadataParts ?? []) {
+      if (p?.text?.content) parts.push(p.text.content);
+    }
+  }
+  const viewsText = parts.find((t) => /view/i.test(t)) ?? "0";
+  const published = parts.find((t) => /ago|hour|day|week|month|year/i.test(t)) ?? "";
+  const sources = lm.contentImage?.thumbnailViewModel?.image?.sources ?? [];
+  const thumbnail =
+    sources[sources.length - 1]?.url || `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+  // length badge
+  const overlays = lm.contentImage?.thumbnailViewModel?.overlays ?? [];
+  let lengthSecs = 0;
+  for (const o of overlays) {
+    const badges = o?.thumbnailBottomOverlayViewModel?.badges ?? [];
+    for (const b of badges) {
+      const txt = b?.thumbnailBadgeViewModel?.text ?? "";
+      const m = txt.match(/^(\d+):(\d+)(?::(\d+))?$/);
+      if (m) {
+        const a = parseInt(m[1], 10);
+        const b2 = parseInt(m[2], 10);
+        const c = m[3] ? parseInt(m[3], 10) : null;
+        lengthSecs = c != null ? a * 3600 + b2 * 60 + c : a * 60 + b2;
+      }
+    }
+  }
+  return {
+    lengthSecs,
+    video: {
+      id,
+      title,
+      description: "",
+      thumbnail,
+      published,
+      views: parseViews(viewsText),
+      rating: "",
+      isShort: false,
+    },
+  };
+}
+
       Cookie: "CONSENT=YES+cb.20210328-17-p0.en+FX+000; SOCS=CAI",
     },
   });
