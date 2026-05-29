@@ -54,14 +54,82 @@ async function fetchTab(path: string): Promise<{ html: string }> {
   return { html: await res.text() };
 }
 
+type YoutubeConfig = {
+  apiKey: string;
+  clientVersion: string;
+  visitorData?: string;
+};
+
+function extractYoutubeConfig(html: string): YoutubeConfig | null {
+  const apiKey = html.match(/"INNERTUBE_API_KEY":"([^"]+)"/)?.[1];
+  const clientVersion = html.match(/"INNERTUBE_CLIENT_VERSION":"([^"]+)"/)?.[1];
+  const visitorData = html.match(/"VISITOR_DATA":"([^"]+)"/)?.[1];
+  if (!apiKey || !clientVersion) return null;
+  return { apiKey, clientVersion, visitorData };
+}
+
+async function fetchContinuation(token: string, config: YoutubeConfig): Promise<any | null> {
+  const res = await fetch(
+    `https://www.youtube.com/youtubei/v1/browse?key=${config.apiKey}&prettyPrint=false`,
+    {
+      method: "POST",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Content-Type": "application/json",
+        Origin: "https://www.youtube.com",
+        Referer: `https://www.youtube.com/${CHANNEL_HANDLE}/videos`,
+        Cookie: "CONSENT=YES+cb.20210328-17-p0.en+FX+000; SOCS=CAI",
+      },
+      body: JSON.stringify({
+        context: {
+          client: {
+            clientName: "WEB",
+            clientVersion: config.clientVersion,
+            hl: "en",
+            gl: "US",
+            visitorData: config.visitorData,
+          },
+        },
+        continuation: token,
+      }),
+    }
+  );
+  if (!res.ok) return null;
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 function extractData(html: string): any | null {
-  const m = html.match(/var ytInitialData = (\{[\s\S]*?\});<\/script>/);
+  const m = html.match(/(?:var\s+)?ytInitialData\s*=\s*(\{[\s\S]*?\});<\/script>/);
   if (!m) return null;
   try {
     return JSON.parse(m[1]);
   } catch {
     return null;
   }
+}
+
+function findContinuationToken(node: any): string | null {
+  if (!node || typeof node !== "object") return null;
+  if (Array.isArray(node)) {
+    for (const x of node) {
+      const token = findContinuationToken(x);
+      if (token) return token;
+    }
+    return null;
+  }
+  const token = node.continuationItemRenderer?.continuationEndpoint?.continuationCommand?.token;
+  if (token) return token;
+  for (const k of Object.keys(node)) {
+    const found = findContinuationToken(node[k]);
+    if (found) return found;
+  }
+  return null;
 }
 
 function parseDuration(txt: string): number {
