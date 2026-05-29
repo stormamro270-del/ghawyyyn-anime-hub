@@ -31,7 +31,6 @@ function walk(node: any, out: any[]) {
   if (
     node.videoRenderer ||
     node.gridVideoRenderer ||
-    node.shortsLockupViewModel ||
     node.lockupViewModel
   ) {
     out.push(node);
@@ -54,14 +53,82 @@ async function fetchTab(path: string): Promise<{ html: string }> {
   return { html: await res.text() };
 }
 
+type YoutubeConfig = {
+  apiKey: string;
+  clientVersion: string;
+  visitorData?: string;
+};
+
+function extractYoutubeConfig(html: string): YoutubeConfig | null {
+  const apiKey = html.match(/"INNERTUBE_API_KEY":"([^"]+)"/)?.[1];
+  const clientVersion = html.match(/"INNERTUBE_CLIENT_VERSION":"([^"]+)"/)?.[1];
+  const visitorData = html.match(/"VISITOR_DATA":"([^"]+)"/)?.[1];
+  if (!apiKey || !clientVersion) return null;
+  return { apiKey, clientVersion, visitorData };
+}
+
+async function fetchContinuation(token: string, config: YoutubeConfig): Promise<any | null> {
+  const res = await fetch(
+    `https://www.youtube.com/youtubei/v1/browse?key=${config.apiKey}&prettyPrint=false`,
+    {
+      method: "POST",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Content-Type": "application/json",
+        Origin: "https://www.youtube.com",
+        Referer: `https://www.youtube.com/${CHANNEL_HANDLE}/videos`,
+        Cookie: "CONSENT=YES+cb.20210328-17-p0.en+FX+000; SOCS=CAI",
+      },
+      body: JSON.stringify({
+        context: {
+          client: {
+            clientName: "WEB",
+            clientVersion: config.clientVersion,
+            hl: "en",
+            gl: "US",
+            visitorData: config.visitorData,
+          },
+        },
+        continuation: token,
+      }),
+    }
+  );
+  if (!res.ok) return null;
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 function extractData(html: string): any | null {
-  const m = html.match(/var ytInitialData = (\{[\s\S]*?\});<\/script>/);
+  const m = html.match(/(?:var\s+)?ytInitialData\s*=\s*(\{[\s\S]*?\});<\/script>/);
   if (!m) return null;
   try {
     return JSON.parse(m[1]);
   } catch {
     return null;
   }
+}
+
+function findContinuationToken(node: any): string | null {
+  if (!node || typeof node !== "object") return null;
+  if (Array.isArray(node)) {
+    for (const x of node) {
+      const token = findContinuationToken(x);
+      if (token) return token;
+    }
+    return null;
+  }
+  const token = node.continuationItemRenderer?.continuationEndpoint?.continuationCommand?.token;
+  if (token) return token;
+  for (const k of Object.keys(node)) {
+    const found = findContinuationToken(node[k]);
+    if (found) return found;
+  }
+  return null;
 }
 
 function parseDuration(txt: string): number {
@@ -117,28 +184,6 @@ function buildFromLockup(lm: any): { video: Video; lengthSecs: number } | null {
   };
 }
 
-function buildFromShortsLockup(s: any): Video | null {
-  const id =
-    s.onTap?.innertubeCommand?.reelWatchEndpoint?.videoId ??
-    s.entityId?.match?.(/([\w-]{11})/)?.[1];
-  if (!id) return null;
-  const title = s.overlayMetadata?.primaryText?.content ?? s.accessibilityText ?? "";
-  const thumb =
-    s.thumbnail?.sources?.[s.thumbnail.sources.length - 1]?.url ||
-    `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
-  const viewsText = s.overlayMetadata?.secondaryText?.content ?? "0";
-  return {
-    id,
-    title,
-    description: "",
-    thumbnail: thumb,
-    published: "",
-    views: parseViews(viewsText),
-    rating: "",
-    isShort: true,
-  };
-}
-
 function buildFromVideoRenderer(r: any): Video | null {
   const id = r.videoId;
   if (!id) return null;
@@ -161,12 +206,37 @@ function buildFromVideoRenderer(r: any): Video | null {
   };
 }
 
+function addRegularVideos(data: any, videos: Video[], seen: Set<string>) {
+  const wrappers: any[] = [];
+  walk(data, wrappers);
+  for (const w of wrappers) {
+    if (w.lockupViewModel) {
+      const built = buildFromLockup(w.lockupViewModel);
+      if (!built) continue;
+      if (built.lengthSecs > 0 && built.lengthSecs < 65) continue;
+      if (seen.has(built.video.id)) continue;
+      seen.add(built.video.id);
+      videos.push(built.video);
+      continue;
+    }
+    const r = w.videoRenderer || w.gridVideoRenderer;
+    if (!r) continue;
+    const watchUrl = r.navigationEndpoint?.commandMetadata?.webCommandMetadata?.url ?? "";
+    if (watchUrl && !watchUrl.startsWith("/watch")) continue;
+    const lengthText =
+      r.lengthText?.simpleText ?? r.lengthText?.accessibility?.accessibilityData?.label ?? "";
+    const secs = parseDuration(lengthText);
+    if (secs > 0 && secs < 65) continue;
+    const v = buildFromVideoRenderer(r);
+    if (!v || seen.has(v.id)) continue;
+    seen.add(v.id);
+    videos.push(v);
+  }
+}
+
 export const getChannelVideos = createServerFn({ method: "GET" }).handler(
   async (): Promise<{ videos: Video[]; channelTitle: string }> => {
-    const [videosTab, shortsTab] = await Promise.all([
-      fetchTab("videos"),
-      fetchTab("shorts"),
-    ]);
+    const videosTab = await fetchTab("videos");
 
     let channelTitle = "غاويين انمى";
     const tm = videosTab.html.match(/<meta\s+property="og:title"\s+content="([^"]+)"/);
@@ -178,62 +248,16 @@ export const getChannelVideos = createServerFn({ method: "GET" }).handler(
     // --- Regular videos tab (lockupViewModel or legacy videoRenderer) ---
     const vData = extractData(videosTab.html);
     if (vData) {
-      const wrappers: any[] = [];
-      walk(vData, wrappers);
-      for (const w of wrappers) {
-        if (w.lockupViewModel) {
-          const built = buildFromLockup(w.lockupViewModel);
-          if (!built) continue;
-          // skip shorts by duration (<65s)
-          if (built.lengthSecs > 0 && built.lengthSecs < 65) continue;
-          if (seen.has(built.video.id)) continue;
-          seen.add(built.video.id);
-          videos.push(built.video);
-          continue;
-        }
-        const r = w.videoRenderer || w.gridVideoRenderer;
-        if (!r) continue;
-        const watchUrl = r.navigationEndpoint?.commandMetadata?.webCommandMetadata?.url ?? "";
-        if (watchUrl && !watchUrl.startsWith("/watch")) continue;
-        const lengthText =
-          r.lengthText?.simpleText ?? r.lengthText?.accessibility?.accessibilityData?.label ?? "";
-        const secs = parseDuration(lengthText);
-        if (secs > 0 && secs < 65) continue;
-        const v = buildFromVideoRenderer(r);
-        if (!v || seen.has(v.id)) continue;
-        seen.add(v.id);
-        videos.push(v);
-      }
-    }
-
-    // --- Shorts tab ---
-    const sData = extractData(shortsTab.html);
-    if (sData) {
-      const wrappers: any[] = [];
-      walk(sData, wrappers);
-      for (const w of wrappers) {
-        if (w.shortsLockupViewModel) {
-          const v = buildFromShortsLockup(w.shortsLockupViewModel);
-          if (v && !seen.has(v.id)) {
-            seen.add(v.id);
-            videos.push(v);
-          }
-          continue;
-        }
-        if (w.lockupViewModel) {
-          const built = buildFromLockup(w.lockupViewModel);
-          if (built && !seen.has(built.video.id)) {
-            seen.add(built.video.id);
-            videos.push({ ...built.video, isShort: true });
-          }
-          continue;
-        }
-        const r = w.videoRenderer || w.gridVideoRenderer;
-        const v = r ? buildFromVideoRenderer(r) : null;
-        if (v && !seen.has(v.id)) {
-          seen.add(v.id);
-          videos.push({ ...v, isShort: true });
-        }
+      addRegularVideos(vData, videos, seen);
+      const config = extractYoutubeConfig(videosTab.html);
+      let token = findContinuationToken(vData);
+      for (let page = 0; config && token && page < 12; page += 1) {
+        const nextData = await fetchContinuation(token, config);
+        if (!nextData) break;
+        const before = videos.length;
+        addRegularVideos(nextData, videos, seen);
+        token = findContinuationToken(nextData);
+        if (videos.length === before) break;
       }
     }
 
