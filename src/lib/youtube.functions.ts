@@ -38,15 +38,16 @@ function walk(node: any, out: any[]) {
   for (const k of Object.keys(node)) walk(node[k], out);
 }
 
-async function fetchTab(path: string): Promise<{ html: string }> {
+async function fetchTab(path: string, hl: string): Promise<{ html: string }> {
+  const acceptLang = hl === "ar" ? "ar,en;q=0.8" : "en-US,en;q=0.9";
   const res = await fetch(
-    `https://www.youtube.com/${CHANNEL_HANDLE}/${path}?hl=en&persist_hl=1`,
+    `https://www.youtube.com/${CHANNEL_HANDLE}/${path}?hl=${hl}&persist_hl=1&gl=EG`,
     {
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9",
-        Cookie: "CONSENT=YES+cb.20210328-17-p0.en+FX+000; SOCS=CAI",
+        "Accept-Language": acceptLang,
+        Cookie: `PREF=hl=${hl}&gl=EG; CONSENT=YES+cb.20210328-17-p0.en+FX+000; SOCS=CAI`,
       },
     }
   );
