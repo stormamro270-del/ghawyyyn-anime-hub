@@ -68,7 +68,7 @@ function extractYoutubeConfig(html: string): YoutubeConfig | null {
   return { apiKey, clientVersion, visitorData };
 }
 
-async function fetchContinuation(token: string, config: YoutubeConfig): Promise<any | null> {
+async function fetchContinuation(token: string, config: YoutubeConfig, hl: string): Promise<any | null> {
   const res = await fetch(
     `https://www.youtube.com/youtubei/v1/browse?key=${config.apiKey}&prettyPrint=false`,
     {
@@ -76,19 +76,19 @@ async function fetchContinuation(token: string, config: YoutubeConfig): Promise<
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Language": hl === "ar" ? "ar,en;q=0.8" : "en-US,en;q=0.9",
         "Content-Type": "application/json",
         Origin: "https://www.youtube.com",
         Referer: `https://www.youtube.com/${CHANNEL_HANDLE}/videos`,
-        Cookie: "CONSENT=YES+cb.20210328-17-p0.en+FX+000; SOCS=CAI",
+        Cookie: `PREF=hl=${hl}&gl=EG; CONSENT=YES+cb.20210328-17-p0.en+FX+000; SOCS=CAI`,
       },
       body: JSON.stringify({
         context: {
           client: {
             clientName: "WEB",
             clientVersion: config.clientVersion,
-            hl: "en",
-            gl: "US",
+            hl,
+            gl: "EG",
             visitorData: config.visitorData,
           },
         },
