@@ -1,13 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { getChannelVideos, type Video } from "@/lib/youtube.functions";
-import { Play, Eye, Star, Youtube, Sparkles, Gamepad2, ChevronRight, ChevronLeft } from "lucide-react";
+import { Play, Eye, Star, Youtube, Sparkles, Gamepad2, ChevronRight, ChevronLeft, Languages } from "lucide-react";
 import { AdBanner } from "@/components/AdBanner";
 
 const PAGE_SIZE = 12;
 
+type Search = { lang: "ar" | "en" };
+
 export const Route = createFileRoute("/")({
-  loader: () => getChannelVideos(),
+  validateSearch: (search: Record<string, unknown>): Search => ({
+    lang: search.lang === "en" ? "en" : "ar",
+  }),
+  loaderDeps: ({ search }) => ({ lang: search.lang }),
+  loader: ({ deps }) => getChannelVideos({ data: { lang: deps.lang } }),
   component: Index,
   head: () => ({
     meta: [
@@ -34,7 +40,7 @@ function formatViews(v: string) {
 }
 
 function Index() {
-  const { videos, channelTitle } = Route.useLoaderData();
+  const { videos, channelTitle, lang } = Route.useLoaderData();
   const featured = videos.find((v: Video) => !v.isShort) ?? videos[0];
   const rest = videos.filter((v: Video) => v.id !== featured?.id);
   const [page, setPage] = useState(1);
@@ -70,6 +76,15 @@ function Index() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Link
+              to="/"
+              search={{ lang: lang === "ar" ? "en" : "ar" }}
+              className="flex items-center gap-2 rounded-lg bg-secondary px-3 py-2 text-sm font-semibold transition hover:bg-secondary/70"
+              title={lang === "ar" ? "English titles" : "عناوين عربية"}
+            >
+              <Languages className="h-4 w-4" />
+              <span className="hidden sm:inline">{lang === "ar" ? "EN" : "AR"}</span>
+            </Link>
             <Link
               to="/games"
               className="flex items-center gap-2 rounded-lg bg-secondary px-3 py-2 text-sm font-semibold transition hover:bg-secondary/70"

@@ -38,15 +38,16 @@ function walk(node: any, out: any[]) {
   for (const k of Object.keys(node)) walk(node[k], out);
 }
 
-async function fetchTab(path: string): Promise<{ html: string }> {
+async function fetchTab(path: string, hl: string): Promise<{ html: string }> {
+  const acceptLang = hl === "ar" ? "ar,en;q=0.8" : "en-US,en;q=0.9";
   const res = await fetch(
-    `https://www.youtube.com/${CHANNEL_HANDLE}/${path}?hl=en&persist_hl=1`,
+    `https://www.youtube.com/${CHANNEL_HANDLE}/${path}?hl=${hl}&persist_hl=1&gl=EG`,
     {
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9",
-        Cookie: "CONSENT=YES+cb.20210328-17-p0.en+FX+000; SOCS=CAI",
+        "Accept-Language": acceptLang,
+        Cookie: `PREF=hl=${hl}&gl=EG; CONSENT=YES+cb.20210328-17-p0.en+FX+000; SOCS=CAI`,
       },
     }
   );
@@ -67,7 +68,7 @@ function extractYoutubeConfig(html: string): YoutubeConfig | null {
   return { apiKey, clientVersion, visitorData };
 }
 
-async function fetchContinuation(token: string, config: YoutubeConfig): Promise<any | null> {
+async function fetchContinuation(token: string, config: YoutubeConfig, hl: string): Promise<any | null> {
   const res = await fetch(
     `https://www.youtube.com/youtubei/v1/browse?key=${config.apiKey}&prettyPrint=false`,
     {
@@ -75,19 +76,19 @@ async function fetchContinuation(token: string, config: YoutubeConfig): Promise<
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Language": hl === "ar" ? "ar,en;q=0.8" : "en-US,en;q=0.9",
         "Content-Type": "application/json",
         Origin: "https://www.youtube.com",
         Referer: `https://www.youtube.com/${CHANNEL_HANDLE}/videos`,
-        Cookie: "CONSENT=YES+cb.20210328-17-p0.en+FX+000; SOCS=CAI",
+        Cookie: `PREF=hl=${hl}&gl=EG; CONSENT=YES+cb.20210328-17-p0.en+FX+000; SOCS=CAI`,
       },
       body: JSON.stringify({
         context: {
           client: {
             clientName: "WEB",
             clientVersion: config.clientVersion,
-            hl: "en",
-            gl: "US",
+            hl,
+            gl: "EG",
             visitorData: config.visitorData,
           },
         },
@@ -234,9 +235,14 @@ function addRegularVideos(data: any, videos: Video[], seen: Set<string>) {
   }
 }
 
-export const getChannelVideos = createServerFn({ method: "GET" }).handler(
-  async (): Promise<{ videos: Video[]; channelTitle: string }> => {
-    const videosTab = await fetchTab("videos");
+export const getChannelVideos = createServerFn({ method: "GET" })
+  .inputValidator((data: { lang?: string } | undefined) => ({
+    lang: data?.lang === "en" ? "en" : "ar",
+  }))
+  .handler(
+  async ({ data }): Promise<{ videos: Video[]; channelTitle: string; lang: string }> => {
+    const hl = data.lang;
+    const videosTab = await fetchTab("videos", hl);
 
     let channelTitle = "غاويين انمى";
     const tm = videosTab.html.match(/<meta\s+property="og:title"\s+content="([^"]+)"/);
@@ -245,14 +251,13 @@ export const getChannelVideos = createServerFn({ method: "GET" }).handler(
     const seen = new Set<string>();
     const videos: Video[] = [];
 
-    // --- Regular videos tab (lockupViewModel or legacy videoRenderer) ---
     const vData = extractData(videosTab.html);
     if (vData) {
       addRegularVideos(vData, videos, seen);
       const config = extractYoutubeConfig(videosTab.html);
       let token = findContinuationToken(vData);
       for (let page = 0; config && token && page < 12; page += 1) {
-        const nextData = await fetchContinuation(token, config);
+        const nextData = await fetchContinuation(token, config, hl);
         if (!nextData) break;
         const before = videos.length;
         addRegularVideos(nextData, videos, seen);
@@ -261,6 +266,6 @@ export const getChannelVideos = createServerFn({ method: "GET" }).handler(
       }
     }
 
-    return { videos, channelTitle };
+    return { videos, channelTitle, lang: hl };
   }
 );
