@@ -40,7 +40,7 @@ function formatViews(v: string) {
 }
 
 function Index() {
-  const { videos, channelTitle } = Route.useLoaderData();
+  const { videos, channelTitle, lang } = Route.useLoaderData();
   const featured = videos.find((v: Video) => !v.isShort) ?? videos[0];
   const rest = videos.filter((v: Video) => v.id !== featured?.id);
   const [page, setPage] = useState(1);
