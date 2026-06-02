@@ -1,13 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { getChannelVideos, type Video } from "@/lib/youtube.functions";
-import { Play, Eye, Star, Youtube, Sparkles, Gamepad2, ChevronRight, ChevronLeft } from "lucide-react";
+import { Play, Eye, Star, Youtube, Sparkles, Gamepad2, ChevronRight, ChevronLeft, Languages } from "lucide-react";
 import { AdBanner } from "@/components/AdBanner";
 
 const PAGE_SIZE = 12;
 
+type Search = { lang: "ar" | "en" };
+
 export const Route = createFileRoute("/")({
-  loader: () => getChannelVideos(),
+  validateSearch: (search: Record<string, unknown>): Search => ({
+    lang: search.lang === "en" ? "en" : "ar",
+  }),
+  loaderDeps: ({ search }) => ({ lang: search.lang }),
+  loader: ({ deps }) => getChannelVideos({ data: { lang: deps.lang } }),
   component: Index,
   head: () => ({
     meta: [
