@@ -235,9 +235,14 @@ function addRegularVideos(data: any, videos: Video[], seen: Set<string>) {
   }
 }
 
-export const getChannelVideos = createServerFn({ method: "GET" }).handler(
-  async (): Promise<{ videos: Video[]; channelTitle: string }> => {
-    const videosTab = await fetchTab("videos");
+export const getChannelVideos = createServerFn({ method: "GET" })
+  .inputValidator((data: { lang?: string } | undefined) => ({
+    lang: data?.lang === "en" ? "en" : "ar",
+  }))
+  .handler(
+  async ({ data }): Promise<{ videos: Video[]; channelTitle: string; lang: string }> => {
+    const hl = data.lang;
+    const videosTab = await fetchTab("videos", hl);
 
     let channelTitle = "غاويين انمى";
     const tm = videosTab.html.match(/<meta\s+property="og:title"\s+content="([^"]+)"/);
@@ -246,14 +251,13 @@ export const getChannelVideos = createServerFn({ method: "GET" }).handler(
     const seen = new Set<string>();
     const videos: Video[] = [];
 
-    // --- Regular videos tab (lockupViewModel or legacy videoRenderer) ---
     const vData = extractData(videosTab.html);
     if (vData) {
       addRegularVideos(vData, videos, seen);
       const config = extractYoutubeConfig(videosTab.html);
       let token = findContinuationToken(vData);
       for (let page = 0; config && token && page < 12; page += 1) {
-        const nextData = await fetchContinuation(token, config);
+        const nextData = await fetchContinuation(token, config, hl);
         if (!nextData) break;
         const before = videos.length;
         addRegularVideos(nextData, videos, seen);
@@ -262,6 +266,6 @@ export const getChannelVideos = createServerFn({ method: "GET" }).handler(
       }
     }
 
-    return { videos, channelTitle };
+    return { videos, channelTitle, lang: hl };
   }
 );
