@@ -28,6 +28,7 @@ type Obstacle = { x: number; type: "trap" | "apple" | "coin" };
 function SnakeRunner() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const bgRef = useRef<HTMLImageElement | null>(null);
+  const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
@@ -60,6 +61,14 @@ function SnakeRunner() {
     bgRef.current = img;
     const stored = typeof window !== "undefined" ? Number(localStorage.getItem("snake-runner-best") || 0) : 0;
     setBest(stored);
+    const done = () => {
+      setLoading(false);
+      setRunning(true);
+    };
+    img.onload = done;
+    img.onerror = done;
+    const t = setTimeout(done, 800);
+    return () => clearTimeout(t);
   }, []);
 
   const reset = useCallback(() => {
@@ -428,7 +437,13 @@ function SnakeRunner() {
 
       // snake with flicker when invulnerable
       const blink = s.invuln > 0 && Math.floor(s.invuln * 12) % 2 === 0;
-      if (!blink) drawSnake(SNAKE_X, s.y, s.bobT);
+      if (!blink) {
+        ctx.save();
+        ctx.translate(SNAKE_X * 2 + SNAKE_W, 0);
+        ctx.scale(-1, 1);
+        drawSnake(SNAKE_X, s.y, s.bobT);
+        ctx.restore();
+      }
 
       const newScore = Math.floor(s.distance) + s.coins * 10;
       setScore(newScore);
@@ -491,7 +506,15 @@ function SnakeRunner() {
             className="block w-full"
             style={{ aspectRatio: `${W}/${H}`, height: "auto" }}
           />
-          {!running && (
+          {loading && (
+            <div className="absolute inset-0 grid place-items-center bg-background/60 backdrop-blur-sm">
+              <div className="flex flex-col items-center gap-3">
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/30 border-t-primary" />
+                <p className="text-sm font-semibold text-primary">جاري تحميل اللعبة…</p>
+              </div>
+            </div>
+          )}
+          {!loading && !running && (
             <div className="absolute inset-0 grid place-items-center bg-background/40 backdrop-blur-sm">
               <button
                 onClick={(e) => {
