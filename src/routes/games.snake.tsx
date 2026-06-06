@@ -21,7 +21,7 @@ const GRAVITY = 1900;
 const JUMP_V = -720;
 const SNAKE_X = 110;
 const SNAKE_W = 120;
-const SNAKE_H = 90;
+const SNAKE_H = 72;
 
 type Obstacle = { x: number; type: "trap" | "apple" | "coin" };
 
