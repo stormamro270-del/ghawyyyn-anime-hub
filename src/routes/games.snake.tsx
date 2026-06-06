@@ -61,6 +61,14 @@ function SnakeRunner() {
     bgRef.current = img;
     const stored = typeof window !== "undefined" ? Number(localStorage.getItem("snake-runner-best") || 0) : 0;
     setBest(stored);
+    const done = () => {
+      setLoading(false);
+      setRunning(true);
+    };
+    img.onload = done;
+    img.onerror = done;
+    const t = setTimeout(done, 800);
+    return () => clearTimeout(t);
   }, []);
 
   const reset = useCallback(() => {
