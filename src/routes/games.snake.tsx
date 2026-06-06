@@ -21,15 +21,17 @@ const GRAVITY = 1900;
 const JUMP_V = -720;
 const SNAKE_X = 110;
 const SNAKE_W = 120;
-const SNAKE_H = 90;
+const SNAKE_H = 72;
 
 type Obstacle = { x: number; type: "trap" | "apple" | "coin" };
 
 function SnakeRunner() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const frameRef = useRef<HTMLDivElement | null>(null);
   const bgRef = useRef<HTMLImageElement | null>(null);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
+  const [paused, setPaused] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
   const [coins, setCoins] = useState(0);
@@ -117,12 +119,32 @@ function SnakeRunner() {
     return () => window.removeEventListener("keydown", handler);
   }, [jump, reset, running, gameOver]);
 
+  // Pause/resume when clicking outside the game frame
   useEffect(() => {
-    if (!running) return;
+    const handler = (e: MouseEvent | TouchEvent) => {
+      const frame = frameRef.current;
+      if (!frame) return;
+      const target = e.target as Node;
+      if (frame.contains(target)) return;
+      if (!running && !gameOver) return;
+      if (gameOver) return;
+      setPaused((p) => !p);
+    };
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("touchstart", handler);
+    };
+  }, [running, gameOver]);
+
+  useEffect(() => {
+    if (!running || paused) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    stateRef.current.last = 0;
 
     const drawCloud = (x: number, y: number, scale: number) => {
       ctx.fillStyle = "rgba(255,255,255,0.95)";
@@ -461,7 +483,7 @@ function SnakeRunner() {
     };
     stateRef.current.raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(stateRef.current.raf);
-  }, [running, best]);
+  }, [running, paused, best]);
 
   return (
     <div dir="rtl" className="min-h-screen">
@@ -492,11 +514,14 @@ function SnakeRunner() {
         </div>
 
         <div
+          ref={frameRef}
           className="cyber-border relative w-full overflow-hidden rounded-2xl"
-          onClick={() => (running ? jump() : reset())}
+          onClick={() => (running && !paused ? jump() : running && paused ? setPaused(false) : reset())}
           onTouchStart={(e) => {
             e.preventDefault();
-            running ? jump() : reset();
+            if (running && !paused) jump();
+            else if (running && paused) setPaused(false);
+            else reset();
           }}
         >
           <canvas
@@ -512,6 +537,20 @@ function SnakeRunner() {
                 <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/30 border-t-primary" />
                 <p className="text-sm font-semibold text-primary">جاري تحميل اللعبة…</p>
               </div>
+            </div>
+          )}
+          {!loading && running && paused && (
+            <div className="absolute inset-0 grid place-items-center bg-background/50 backdrop-blur-sm">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPaused(false);
+                }}
+                className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-bold text-primary-foreground"
+                style={{ boxShadow: "var(--glow-primary)" }}
+              >
+                <Play className="h-4 w-4" /> استئناف
+              </button>
             </div>
           )}
           {!loading && !running && (
