@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as GamesRouteImport } from './routes/games'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as GamesIndexRouteImport } from './routes/games.index'
 import { Route as WatchVideoIdRouteImport } from './routes/watch.$videoId'
@@ -16,15 +17,20 @@ import { Route as GamesTicTacToeRouteImport } from './routes/games.tic-tac-toe'
 import { Route as GamesSnakeRouteImport } from './routes/games.snake'
 import { Route as GamesAppleRouteImport } from './routes/games.apple'
 
+const GamesRoute = GamesRouteImport.update({
+  id: '/games',
+  path: '/games',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GamesIndexRoute = GamesIndexRouteImport.update({
-  id: '/games/',
-  path: '/games/',
-  getParentRoute: () => rootRouteImport,
+  id: '/',
+  path: '/',
+  getParentRoute: () => GamesRoute,
 } as any)
 const WatchVideoIdRoute = WatchVideoIdRouteImport.update({
   id: '/watch/$videoId',
@@ -49,6 +55,7 @@ const GamesAppleRoute = GamesAppleRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/games': typeof GamesRouteWithChildren
   '/games/apple': typeof GamesAppleRoute
   '/games/snake': typeof GamesSnakeRoute
   '/games/tic-tac-toe': typeof GamesTicTacToeRoute
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/games': typeof GamesRouteWithChildren
   '/games/apple': typeof GamesAppleRoute
   '/games/snake': typeof GamesSnakeRoute
   '/games/tic-tac-toe': typeof GamesTicTacToeRoute
@@ -76,6 +84,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/games'
     | '/games/apple'
     | '/games/snake'
     | '/games/tic-tac-toe'
@@ -92,6 +101,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/games'
     | '/games/apple'
     | '/games/snake'
     | '/games/tic-tac-toe'
@@ -101,12 +111,19 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  GamesRoute: typeof GamesRouteWithChildren
   WatchVideoIdRoute: typeof WatchVideoIdRoute
-  GamesIndexRoute: typeof GamesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/games': {
+      id: '/games'
+      path: '/games'
+      fullPath: '/games'
+      preLoaderRoute: typeof GamesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -116,10 +133,10 @@ declare module '@tanstack/react-router' {
     }
     '/games/': {
       id: '/games/'
-      path: '/games'
+      path: '/'
       fullPath: '/games/'
       preLoaderRoute: typeof GamesIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof GamesRoute
     }
     '/watch/$videoId': {
       id: '/watch/$videoId'
@@ -152,10 +169,26 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface GamesRouteChildren {
+  GamesAppleRoute: typeof GamesAppleRoute
+  GamesSnakeRoute: typeof GamesSnakeRoute
+  GamesTicTacToeRoute: typeof GamesTicTacToeRoute
+  GamesIndexRoute: typeof GamesIndexRoute
+}
+
+const GamesRouteChildren: GamesRouteChildren = {
+  GamesAppleRoute: GamesAppleRoute,
+  GamesSnakeRoute: GamesSnakeRoute,
+  GamesTicTacToeRoute: GamesTicTacToeRoute,
+  GamesIndexRoute: GamesIndexRoute,
+}
+
+const GamesRouteWithChildren = GamesRoute._addFileChildren(GamesRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  GamesRoute: GamesRouteWithChildren,
   WatchVideoIdRoute: WatchVideoIdRoute,
-  GamesIndexRoute: GamesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
