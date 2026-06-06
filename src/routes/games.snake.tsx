@@ -119,6 +119,25 @@ function SnakeRunner() {
     return () => window.removeEventListener("keydown", handler);
   }, [jump, reset, running, gameOver]);
 
+  // Pause/resume when clicking outside the game frame
+  useEffect(() => {
+    const handler = (e: MouseEvent | TouchEvent) => {
+      const frame = frameRef.current;
+      if (!frame) return;
+      const target = e.target as Node;
+      if (frame.contains(target)) return;
+      if (!running && !gameOver) return;
+      if (gameOver) return;
+      setPaused((p) => !p);
+    };
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("touchstart", handler);
+    };
+  }, [running, gameOver]);
+
   useEffect(() => {
     if (!running) return;
     const canvas = canvasRef.current;
