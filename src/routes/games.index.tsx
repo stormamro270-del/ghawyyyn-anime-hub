@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Gamepad2, ArrowRight, Sparkles } from "lucide-react";
 import { AdBanner } from "@/components/AdBanner";
 
-export const Route = createFileRoute("/games")({
+export const Route = createFileRoute("/games/")({
   component: GamesPage,
   head: () => ({
     meta: [
