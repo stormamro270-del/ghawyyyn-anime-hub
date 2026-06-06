@@ -144,6 +144,7 @@ function SnakeRunner() {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    stateRef.current.last = 0;
 
     const drawCloud = (x: number, y: number, scale: number) => {
       ctx.fillStyle = "rgba(255,255,255,0.95)";
