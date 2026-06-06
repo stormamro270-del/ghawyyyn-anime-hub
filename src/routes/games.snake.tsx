@@ -437,7 +437,13 @@ function SnakeRunner() {
 
       // snake with flicker when invulnerable
       const blink = s.invuln > 0 && Math.floor(s.invuln * 12) % 2 === 0;
-      if (!blink) drawSnake(SNAKE_X, s.y, s.bobT);
+      if (!blink) {
+        ctx.save();
+        ctx.translate(SNAKE_X * 2 + SNAKE_W, 0);
+        ctx.scale(-1, 1);
+        drawSnake(SNAKE_X, s.y, s.bobT);
+        ctx.restore();
+      }
 
       const newScore = Math.floor(s.distance) + s.coins * 10;
       setScore(newScore);
