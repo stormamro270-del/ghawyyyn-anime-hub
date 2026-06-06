@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as GamesRouteImport } from './routes/games'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as GamesIndexRouteImport } from './routes/games.index'
 import { Route as WatchVideoIdRouteImport } from './routes/watch.$videoId'
 import { Route as GamesTicTacToeRouteImport } from './routes/games.tic-tac-toe'
 import { Route as GamesSnakeRouteImport } from './routes/games.snake'
@@ -25,6 +26,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const GamesIndexRoute = GamesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => GamesRoute,
 } as any)
 const WatchVideoIdRoute = WatchVideoIdRouteImport.update({
   id: '/watch/$videoId',
@@ -54,14 +60,15 @@ export interface FileRoutesByFullPath {
   '/games/snake': typeof GamesSnakeRoute
   '/games/tic-tac-toe': typeof GamesTicTacToeRoute
   '/watch/$videoId': typeof WatchVideoIdRoute
+  '/games/': typeof GamesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/games': typeof GamesRouteWithChildren
   '/games/apple': typeof GamesAppleRoute
   '/games/snake': typeof GamesSnakeRoute
   '/games/tic-tac-toe': typeof GamesTicTacToeRoute
   '/watch/$videoId': typeof WatchVideoIdRoute
+  '/games': typeof GamesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,6 +78,7 @@ export interface FileRoutesById {
   '/games/snake': typeof GamesSnakeRoute
   '/games/tic-tac-toe': typeof GamesTicTacToeRoute
   '/watch/$videoId': typeof WatchVideoIdRoute
+  '/games/': typeof GamesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -81,14 +89,15 @@ export interface FileRouteTypes {
     | '/games/snake'
     | '/games/tic-tac-toe'
     | '/watch/$videoId'
+    | '/games/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/games'
     | '/games/apple'
     | '/games/snake'
     | '/games/tic-tac-toe'
     | '/watch/$videoId'
+    | '/games'
   id:
     | '__root__'
     | '/'
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/games/snake'
     | '/games/tic-tac-toe'
     | '/watch/$videoId'
+    | '/games/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -120,6 +130,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/games/': {
+      id: '/games/'
+      path: '/'
+      fullPath: '/games/'
+      preLoaderRoute: typeof GamesIndexRouteImport
+      parentRoute: typeof GamesRoute
     }
     '/watch/$videoId': {
       id: '/watch/$videoId'
@@ -156,12 +173,14 @@ interface GamesRouteChildren {
   GamesAppleRoute: typeof GamesAppleRoute
   GamesSnakeRoute: typeof GamesSnakeRoute
   GamesTicTacToeRoute: typeof GamesTicTacToeRoute
+  GamesIndexRoute: typeof GamesIndexRoute
 }
 
 const GamesRouteChildren: GamesRouteChildren = {
   GamesAppleRoute: GamesAppleRoute,
   GamesSnakeRoute: GamesSnakeRoute,
   GamesTicTacToeRoute: GamesTicTacToeRoute,
+  GamesIndexRoute: GamesIndexRoute,
 }
 
 const GamesRouteWithChildren = GamesRoute._addFileChildren(GamesRouteChildren)
