@@ -139,7 +139,7 @@ function SnakeRunner() {
   }, [running, gameOver]);
 
   useEffect(() => {
-    if (!running) return;
+    if (!running || paused) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
