@@ -27,9 +27,11 @@ type Obstacle = { x: number; type: "trap" | "apple" | "coin" };
 
 function SnakeRunner() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const frameRef = useRef<HTMLDivElement | null>(null);
   const bgRef = useRef<HTMLImageElement | null>(null);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
+  const [paused, setPaused] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
   const [coins, setCoins] = useState(0);
