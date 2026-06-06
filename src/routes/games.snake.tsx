@@ -514,11 +514,14 @@ function SnakeRunner() {
         </div>
 
         <div
+          ref={frameRef}
           className="cyber-border relative w-full overflow-hidden rounded-2xl"
-          onClick={() => (running ? jump() : reset())}
+          onClick={() => (running && !paused ? jump() : running && paused ? setPaused(false) : reset())}
           onTouchStart={(e) => {
             e.preventDefault();
-            running ? jump() : reset();
+            if (running && !paused) jump();
+            else if (running && paused) setPaused(false);
+            else reset();
           }}
         >
           <canvas
@@ -534,6 +537,20 @@ function SnakeRunner() {
                 <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/30 border-t-primary" />
                 <p className="text-sm font-semibold text-primary">جاري تحميل اللعبة…</p>
               </div>
+            </div>
+          )}
+          {!loading && running && paused && (
+            <div className="absolute inset-0 grid place-items-center bg-background/50 backdrop-blur-sm">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPaused(false);
+                }}
+                className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-bold text-primary-foreground"
+                style={{ boxShadow: "var(--glow-primary)" }}
+              >
+                <Play className="h-4 w-4" /> استئناف
+              </button>
             </div>
           )}
           {!loading && !running && (
