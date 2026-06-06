@@ -482,7 +482,7 @@ function SnakeRunner() {
     };
     stateRef.current.raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(stateRef.current.raf);
-  }, [running, best]);
+  }, [running, paused, best]);
 
   return (
     <div dir="rtl" className="min-h-screen">
