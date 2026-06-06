@@ -506,7 +506,15 @@ function SnakeRunner() {
             className="block w-full"
             style={{ aspectRatio: `${W}/${H}`, height: "auto" }}
           />
-          {!running && (
+          {loading && (
+            <div className="absolute inset-0 grid place-items-center bg-background/60 backdrop-blur-sm">
+              <div className="flex flex-col items-center gap-3">
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/30 border-t-primary" />
+                <p className="text-sm font-semibold text-primary">جاري تحميل اللعبة…</p>
+              </div>
+            </div>
+          )}
+          {!loading && !running && (
             <div className="absolute inset-0 grid place-items-center bg-background/40 backdrop-blur-sm">
               <button
                 onClick={(e) => {
