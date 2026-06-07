@@ -82,8 +82,9 @@ function TicTacToe() {
       </header>
 
       <section className="container mx-auto max-w-md px-4 py-10">
-        <div className="cyber-border mb-6 rounded-xl p-4 text-center">
+        <div className="cyber-border mb-4 rounded-xl p-4 text-center">
           <p className="text-lg font-bold text-primary">{status}</p>
+          <p className="mt-1 text-sm text-muted-foreground">عدد الانتصارات: <span className="font-bold text-accent">{wins}</span></p>
         </div>
 
         <div className="grid aspect-square grid-cols-3 gap-3">
