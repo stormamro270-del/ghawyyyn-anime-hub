@@ -31,7 +31,16 @@ function checkWinner(b: Cell[]): Cell | "draw" | null {
 function TicTacToe() {
   const [board, setBoard] = useState<Cell[]>(Array(9).fill(null));
   const [xNext, setXNext] = useState(true);
+  const [wins, setWins] = useState(0);
+  const scoredRef = useRef(false);
   const winner = useMemo(() => checkWinner(board), [board]);
+
+  useEffect(() => {
+    if (winner && winner !== "draw" && !scoredRef.current) {
+      scoredRef.current = true;
+      setWins((w) => w + 1);
+    }
+  }, [winner]);
 
   const handleClick = (i: number) => {
     if (board[i] || winner) return;
