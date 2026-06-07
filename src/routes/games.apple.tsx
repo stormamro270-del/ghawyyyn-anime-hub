@@ -196,6 +196,8 @@ function AppleGame() {
           اسحب بإصبعك أو استخدم الأسهم
         </p>
 
+        <Leaderboard game="apple-2048" score={best} canSubmit={true} />
+
         <AdBanner />
       </section>
     </div>
