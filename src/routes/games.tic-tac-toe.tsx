@@ -53,6 +53,12 @@ function TicTacToe() {
   const reset = () => {
     setBoard(Array(9).fill(null));
     setXNext(true);
+    scoredRef.current = false;
+  };
+
+  const resetAll = () => {
+    reset();
+    setWins(0);
   };
 
   const status = winner
