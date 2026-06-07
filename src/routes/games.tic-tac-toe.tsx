@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { ArrowRight, RotateCcw } from "lucide-react";
 import { AdBanner } from "@/components/AdBanner";
+import { Leaderboard } from "@/components/Leaderboard";
 
 export const Route = createFileRoute("/games/tic-tac-toe")({
   component: TicTacToe,
