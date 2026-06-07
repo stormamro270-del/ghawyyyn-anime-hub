@@ -578,6 +578,8 @@ function SnakeRunner() {
           🍎 تفاحة = +1 · ⭐ عملة = +3 · 💜 شوك = خسارة قلب
         </p>
 
+        <Leaderboard game="snake" score={score} canSubmit={gameOver} />
+
         <AdBanner />
       </section>
     </div>
