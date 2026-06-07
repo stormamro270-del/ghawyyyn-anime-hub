@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowRight, RotateCcw } from "lucide-react";
 import { AdBanner } from "@/components/AdBanner";
+import { Leaderboard } from "@/components/Leaderboard";
 
 export const Route = createFileRoute("/games/apple")({
   component: AppleGame,
