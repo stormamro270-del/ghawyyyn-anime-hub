@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { ArrowRight, Play, RotateCcw, Heart } from "lucide-react";
 import { AdBanner } from "@/components/AdBanner";
+import { Leaderboard } from "@/components/Leaderboard";
 import snakeAsset from "@/assets/snake-cute.png.asset.json";
 
 export const Route = createFileRoute("/games/snake")({
@@ -576,6 +577,8 @@ function SnakeRunner() {
         <p className="mt-1 text-center text-xs text-muted-foreground">
           🍎 تفاحة = +1 · ⭐ عملة = +3 · 💜 شوك = خسارة قلب
         </p>
+
+        <Leaderboard game="snake" score={score} canSubmit={gameOver} />
 
         <AdBanner />
       </section>

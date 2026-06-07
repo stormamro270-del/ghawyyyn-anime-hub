@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { ArrowRight, RotateCcw } from "lucide-react";
 import { AdBanner } from "@/components/AdBanner";
+import { Leaderboard } from "@/components/Leaderboard";
 
 export const Route = createFileRoute("/games/tic-tac-toe")({
   component: TicTacToe,
@@ -30,7 +31,16 @@ function checkWinner(b: Cell[]): Cell | "draw" | null {
 function TicTacToe() {
   const [board, setBoard] = useState<Cell[]>(Array(9).fill(null));
   const [xNext, setXNext] = useState(true);
+  const [wins, setWins] = useState(0);
+  const scoredRef = useRef(false);
   const winner = useMemo(() => checkWinner(board), [board]);
+
+  useEffect(() => {
+    if (winner && winner !== "draw" && !scoredRef.current) {
+      scoredRef.current = true;
+      setWins((w) => w + 1);
+    }
+  }, [winner]);
 
   const handleClick = (i: number) => {
     if (board[i] || winner) return;
@@ -43,6 +53,12 @@ function TicTacToe() {
   const reset = () => {
     setBoard(Array(9).fill(null));
     setXNext(true);
+    scoredRef.current = false;
+  };
+
+  const resetAll = () => {
+    reset();
+    setWins(0);
   };
 
   const status = winner
@@ -66,8 +82,9 @@ function TicTacToe() {
       </header>
 
       <section className="container mx-auto max-w-md px-4 py-10">
-        <div className="cyber-border mb-6 rounded-xl p-4 text-center">
+        <div className="cyber-border mb-4 rounded-xl p-4 text-center">
           <p className="text-lg font-bold text-primary">{status}</p>
+          <p className="mt-1 text-sm text-muted-foreground">عدد الانتصارات: <span className="font-bold text-accent">{wins}</span></p>
         </div>
 
         <div className="grid aspect-square grid-cols-3 gap-3">
@@ -86,13 +103,23 @@ function TicTacToe() {
           ))}
         </div>
 
-        <button
-          onClick={reset}
-          className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 font-bold text-primary-foreground transition hover:brightness-110"
-          style={{ boxShadow: "var(--glow-primary)" }}
-        >
-          <RotateCcw className="h-4 w-4" /> لعبة جديدة
-        </button>
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <button
+            onClick={reset}
+            className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 font-bold text-primary-foreground transition hover:brightness-110"
+            style={{ boxShadow: "var(--glow-primary)" }}
+          >
+            <RotateCcw className="h-4 w-4" /> جولة جديدة
+          </button>
+          <button
+            onClick={resetAll}
+            className="flex items-center justify-center gap-2 rounded-xl bg-secondary px-4 py-3 font-bold transition hover:brightness-110"
+          >
+            صفّر النقاط
+          </button>
+        </div>
+
+        <Leaderboard game="tic-tac-toe" score={wins} canSubmit={true} />
 
         <AdBanner />
       </section>

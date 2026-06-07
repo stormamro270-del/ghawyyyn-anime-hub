@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowRight, RotateCcw } from "lucide-react";
 import { AdBanner } from "@/components/AdBanner";
+import { Leaderboard } from "@/components/Leaderboard";
 
 export const Route = createFileRoute("/games/apple")({
   component: AppleGame,
@@ -194,6 +195,8 @@ function AppleGame() {
         <p className="mt-4 text-center text-xs text-muted-foreground">
           اسحب بإصبعك أو استخدم الأسهم
         </p>
+
+        <Leaderboard game="apple-2048" score={best} canSubmit={true} />
 
         <AdBanner />
       </section>
