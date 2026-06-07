@@ -103,13 +103,23 @@ function TicTacToe() {
           ))}
         </div>
 
-        <button
-          onClick={reset}
-          className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 font-bold text-primary-foreground transition hover:brightness-110"
-          style={{ boxShadow: "var(--glow-primary)" }}
-        >
-          <RotateCcw className="h-4 w-4" /> لعبة جديدة
-        </button>
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <button
+            onClick={reset}
+            className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 font-bold text-primary-foreground transition hover:brightness-110"
+            style={{ boxShadow: "var(--glow-primary)" }}
+          >
+            <RotateCcw className="h-4 w-4" /> جولة جديدة
+          </button>
+          <button
+            onClick={resetAll}
+            className="flex items-center justify-center gap-2 rounded-xl bg-secondary px-4 py-3 font-bold transition hover:brightness-110"
+          >
+            صفّر النقاط
+          </button>
+        </div>
+
+        <Leaderboard game="tic-tac-toe" score={wins} canSubmit={true} />
 
         <AdBanner />
       </section>
