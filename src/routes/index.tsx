@@ -125,9 +125,9 @@ function Index() {
 
   const rest = useMemo(() => {
     let list = baseRest;
-    if (view === "saved") list = list.filter((v) => savedIds.includes(v.id));
+    if (view === "saved") list = list.filter((v: Video) => savedIds.includes(v.id));
     const q = query.trim().toLowerCase();
-    if (q) list = list.filter((v) => v.title.toLowerCase().includes(q));
+    if (q) list = list.filter((v: Video) => v.title.toLowerCase().includes(q));
     if (sort === "views") {
       list = [...list].sort((a, b) => parseInt(b.views || "0", 10) - parseInt(a.views || "0", 10));
     }
