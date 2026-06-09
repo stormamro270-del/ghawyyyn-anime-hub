@@ -17,10 +17,13 @@ import {
   RefreshCcw,
 } from "lucide-react";
 import { AdBanner } from "@/components/AdBanner";
+import { AnimatedViews } from "@/components/AnimatedViews";
 import { useWatchLater } from "@/lib/watch-later";
 
 const PAGE_SIZE = 12;
-const REFRESH_MS = 5 * 60 * 1000;
+// Aggressive sync while the tab is visible; back off in the background.
+const REFRESH_MS_ACTIVE = 60 * 1000;
+const REFRESH_MS_IDLE = 5 * 60 * 1000;
 
 type Search = { lang: "ar" | "en" };
 
