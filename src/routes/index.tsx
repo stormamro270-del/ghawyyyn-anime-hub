@@ -76,38 +76,78 @@ function Index() {
 
   useEffect(() => {
     let cancelled = false;
-    const refresh = async () => {
-      try {
-        setRefreshing(true);
-        const fresh = await getChannelVideos({ data: { lang } });
-        if (!cancelled && fresh?.videos?.length) {
-          setData((prev: typeof initial) => {
-            const map = new Map<string, Video>(fresh.videos.map((v: Video) => [v.id, v] as const));
-            const merged = prev.videos.map((v: Video) => {
-              const updated = map.get(v.id);
-              return updated ? { ...v, views: updated.views, title: updated.title, thumbnail: updated.thumbnail } : v;
+    let timer: number | null = null;
+    let inflight: Promise<void> | null = null;
+
+    const refresh = (): Promise<void> => {
+      if (inflight) return inflight;
+      inflight = (async () => {
+        try {
+          setRefreshing(true);
+          const fresh = await getChannelVideos({ data: { lang } });
+          if (!cancelled && fresh?.videos?.length) {
+            setData((prev: typeof initial) => {
+              const map = new Map<string, Video>(
+                fresh.videos.map((v: Video) => [v.id, v] as const)
+              );
+              const merged = prev.videos.map((v: Video) => {
+                const updated = map.get(v.id);
+                if (!updated) return v;
+                // Only bump views forward — never let scrape jitter drop the count below the last seen value.
+                const prevN = parseInt(v.views || "0", 10);
+                const nextN = parseInt(updated.views || "0", 10);
+                const views = nextN >= prevN ? updated.views : v.views;
+                return {
+                  ...v,
+                  views,
+                  title: updated.title,
+                  thumbnail: updated.thumbnail,
+                };
+              });
+              const existing = new Set(prev.videos.map((v: Video) => v.id));
+              const newOnes = fresh.videos.filter((v: Video) => !existing.has(v.id));
+              return { ...prev, videos: [...newOnes, ...merged] };
             });
-            const existing = new Set(prev.videos.map((v: Video) => v.id));
-            const newOnes = fresh.videos.filter((v: Video) => !existing.has(v.id));
-            return { ...prev, videos: [...newOnes, ...merged] };
-          });
-          setLastSync(Date.now());
+            setLastSync(Date.now());
+          }
+        } catch {
+          // ignore
+        } finally {
+          if (!cancelled) setRefreshing(false);
+          inflight = null;
         }
-      } catch {
-        // ignore
-      } finally {
-        if (!cancelled) setRefreshing(false);
+      })();
+      return inflight;
+    };
+
+    const schedule = () => {
+      if (timer) window.clearTimeout(timer);
+      const delay =
+        typeof document !== "undefined" && document.visibilityState === "visible"
+          ? REFRESH_MS_ACTIVE
+          : REFRESH_MS_IDLE;
+      timer = window.setTimeout(async () => {
+        await refresh();
+        if (!cancelled) schedule();
+      }, delay);
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        refresh();
+        schedule();
       }
     };
-    const id = window.setInterval(refresh, REFRESH_MS);
-    const onFocus = () => {
-      if (Date.now() - lastSync > 60_000) refresh();
-    };
-    window.addEventListener("focus", onFocus);
+    const onOnline = () => refresh();
+
+    schedule();
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("online", onOnline);
     return () => {
       cancelled = true;
-      window.clearInterval(id);
-      window.removeEventListener("focus", onFocus);
+      if (timer) window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("online", onOnline);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
