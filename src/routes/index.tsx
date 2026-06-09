@@ -425,7 +425,7 @@ function Index() {
                       <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Eye className="h-3 w-3" />
-                          {formatViews(v.views)}
+                          <AnimatedViews value={v.views} />
                         </span>
                         <span className="flex items-center gap-1">
                           <Star className="h-3 w-3 fill-accent text-accent" />
