@@ -51,6 +51,7 @@ function WatchPage() {
 
   return (
     <div dir="rtl" className="min-h-screen">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: videoLd }} />
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl">
         <div className="container mx-auto flex items-center justify-between px-4 py-4">
           <Link to="/" className="flex items-center gap-2 text-sm font-semibold text-primary hover:text-accent">
