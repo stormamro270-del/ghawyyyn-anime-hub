@@ -29,6 +29,26 @@ function WatchPage() {
   const current = videos.find((v: Video) => v.id === videoId) ?? videos[0];
   const related = videos.filter((v: Video) => v.id !== current.id).slice(0, 8);
 
+  const videoLd = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    name: current.title,
+    description: current.description || current.title,
+    thumbnailUrl: [current.thumbnail],
+    uploadDate: current.published || new Date().toISOString(),
+    contentUrl: `https://www.youtube.com/watch?v=${current.id}`,
+    embedUrl: `https://www.youtube.com/embed/${current.id}`,
+    interactionStatistic: {
+      "@type": "InteractionCounter",
+      interactionType: { "@type": "WatchAction" },
+      userInteractionCount: parseInt(current.views || "0", 10),
+    },
+    publisher: {
+      "@type": "Organization",
+      name: channelTitle,
+    },
+  });
+
   return (
     <div dir="rtl" className="min-h-screen">
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl">
