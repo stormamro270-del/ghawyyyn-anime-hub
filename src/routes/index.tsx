@@ -291,7 +291,7 @@ function Index() {
               <div className="mb-4 flex flex-wrap gap-3 text-sm">
                 <span className="flex items-center gap-1.5 rounded-full bg-secondary/60 px-3 py-1">
                   <Eye className="h-3.5 w-3.5 text-accent" />
-                  {formatViews(featured.views)} مشاهدة
+                  <AnimatedViews value={featured.views} /> مشاهدة
                 </span>
                 <span className="flex items-center gap-1.5 rounded-full bg-secondary/60 px-3 py-1">
                   <Star className="h-3.5 w-3.5 fill-accent text-accent" />
