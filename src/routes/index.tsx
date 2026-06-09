@@ -78,15 +78,14 @@ function Index() {
         setRefreshing(true);
         const fresh = await getChannelVideos({ data: { lang } });
         if (!cancelled && fresh?.videos?.length) {
-          // merge: keep existing order, update views/title/thumbnail by id, append new
-          setData((prev) => {
-            const map = new Map(fresh.videos.map((v) => [v.id, v]));
-            const merged = prev.videos.map((v) => {
+          setData((prev: typeof initial) => {
+            const map = new Map<string, Video>(fresh.videos.map((v: Video) => [v.id, v] as const));
+            const merged = prev.videos.map((v: Video) => {
               const updated = map.get(v.id);
               return updated ? { ...v, views: updated.views, title: updated.title, thumbnail: updated.thumbnail } : v;
             });
-            const existing = new Set(prev.videos.map((v) => v.id));
-            const newOnes = fresh.videos.filter((v) => !existing.has(v.id));
+            const existing = new Set(prev.videos.map((v: Video) => v.id));
+            const newOnes = fresh.videos.filter((v: Video) => !existing.has(v.id));
             return { ...prev, videos: [...newOnes, ...merged] };
           });
           setLastSync(Date.now());
