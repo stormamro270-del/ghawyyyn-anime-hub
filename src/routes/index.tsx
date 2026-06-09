@@ -151,7 +151,7 @@ function Index() {
         "@context": "https://schema.org",
         "@type": "ItemList",
         name: `${channelTitle} — قائمة الفيديوهات`,
-        itemListElement: videos.slice(0, 20).map((v, i) => ({
+        itemListElement: videos.slice(0, 20).map((v: Video, i: number) => ({
           "@type": "ListItem",
           position: i + 1,
           url: `https://www.youtube.com/watch?v=${v.id}`,
