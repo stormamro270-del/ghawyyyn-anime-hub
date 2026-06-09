@@ -1,10 +1,26 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getChannelVideos, type Video } from "@/lib/youtube.functions";
-import { Play, Eye, Star, Youtube, Sparkles, Gamepad2, ChevronRight, ChevronLeft, Languages } from "lucide-react";
+import {
+  Play,
+  Eye,
+  Star,
+  Youtube,
+  Sparkles,
+  Gamepad2,
+  ChevronRight,
+  ChevronLeft,
+  Languages,
+  Search,
+  Bookmark,
+  BookmarkCheck,
+  RefreshCcw,
+} from "lucide-react";
 import { AdBanner } from "@/components/AdBanner";
+import { useWatchLater } from "@/lib/watch-later";
 
 const PAGE_SIZE = 12;
+const REFRESH_MS = 5 * 60 * 1000;
 
 type Search = { lang: "ar" | "en" };
 
@@ -39,11 +55,85 @@ function formatViews(v: string) {
   return n.toString();
 }
 
+type ViewMode = "all" | "saved";
+type SortMode = "newest" | "views";
+
 function Index() {
-  const { videos, channelTitle, lang } = Route.useLoaderData();
+  const initial = Route.useLoaderData();
+  const { lang } = Route.useSearch();
+  const [data, setData] = useState(initial);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastSync, setLastSync] = useState<number>(Date.now());
+
+  // Live re-sync view counts (re-scrape channel page in background)
+  useEffect(() => {
+    setData(initial);
+    setLastSync(Date.now());
+  }, [initial]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = async () => {
+      try {
+        setRefreshing(true);
+        const fresh = await getChannelVideos({ data: { lang } });
+        if (!cancelled && fresh?.videos?.length) {
+          setData((prev: typeof initial) => {
+            const map = new Map<string, Video>(fresh.videos.map((v: Video) => [v.id, v] as const));
+            const merged = prev.videos.map((v: Video) => {
+              const updated = map.get(v.id);
+              return updated ? { ...v, views: updated.views, title: updated.title, thumbnail: updated.thumbnail } : v;
+            });
+            const existing = new Set(prev.videos.map((v: Video) => v.id));
+            const newOnes = fresh.videos.filter((v: Video) => !existing.has(v.id));
+            return { ...prev, videos: [...newOnes, ...merged] };
+          });
+          setLastSync(Date.now());
+        }
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setRefreshing(false);
+      }
+    };
+    const id = window.setInterval(refresh, REFRESH_MS);
+    const onFocus = () => {
+      if (Date.now() - lastSync > 60_000) refresh();
+    };
+    window.addEventListener("focus", onFocus);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+      window.removeEventListener("focus", onFocus);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
+
+  const { videos, channelTitle } = data;
   const featured = videos.find((v: Video) => !v.isShort) ?? videos[0];
-  const rest = videos.filter((v: Video) => v.id !== featured?.id);
+  const baseRest = videos.filter((v: Video) => v.id !== featured?.id);
+
+  const [query, setQuery] = useState("");
+  const [view, setView] = useState<ViewMode>("all");
+  const [sort, setSort] = useState<SortMode>("newest");
   const [page, setPage] = useState(1);
+  const { ids: savedIds, toggle: toggleSaved, has: isSaved } = useWatchLater();
+
+  useEffect(() => {
+    setPage(1);
+  }, [query, view, sort, lang]);
+
+  const rest = useMemo(() => {
+    let list = baseRest;
+    if (view === "saved") list = list.filter((v: Video) => savedIds.includes(v.id));
+    const q = query.trim().toLowerCase();
+    if (q) list = list.filter((v: Video) => v.title.toLowerCase().includes(q));
+    if (sort === "views") {
+      list = [...list].sort((a, b) => parseInt(b.views || "0", 10) - parseInt(a.views || "0", 10));
+    }
+    return list;
+  }, [baseRest, view, query, sort, savedIds]);
+
   const totalPages = Math.max(1, Math.ceil(rest.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const pageVideos = rest.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -54,8 +144,27 @@ function Index() {
     }
   };
 
+  // JSON-LD ItemList for SEO
+  const itemListLd = useMemo(
+    () =>
+      JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        name: `${channelTitle} — قائمة الفيديوهات`,
+        itemListElement: videos.slice(0, 20).map((v: Video, i: number) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          url: `https://www.youtube.com/watch?v=${v.id}`,
+          name: v.title,
+          image: v.thumbnail,
+        })),
+      }),
+    [videos, channelTitle]
+  );
+
   return (
     <div dir="rtl" className="min-h-screen">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: itemListLd }} />
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl">
         <div className="container mx-auto flex items-center justify-between px-4 py-4">
@@ -154,12 +263,11 @@ function Index() {
         </section>
       )}
 
-      {/* Grid */}
       <AdBanner className="container mx-auto px-4" />
 
       {/* Grid */}
       <section className="container mx-auto px-4 py-10">
-        <div className="mb-8 flex items-center gap-2">
+        <div className="mb-6 flex items-center gap-2">
           <div className="h-px flex-1 bg-gradient-to-l from-accent/60 to-transparent" />
           <span className="text-sm font-bold uppercase tracking-widest text-accent">
             ◆ مكتبة الفيديوهات
@@ -167,55 +275,127 @@ function Index() {
           <div className="h-px flex-1 bg-gradient-to-r from-accent/60 to-transparent" />
         </div>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {pageVideos.map((v: Video) => (
-            <Link
-              key={v.id}
-              to="/watch/$videoId"
-              params={{ videoId: v.id }}
-              className="cyber-border group block overflow-hidden rounded-xl"
+        {/* Search + filters */}
+        <div className="mb-6 flex flex-wrap items-center gap-3">
+          <label className="relative flex-1 min-w-[220px]">
+            <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="ابحث في الفيديوهات…"
+              className="w-full rounded-lg border border-border bg-secondary/40 px-10 py-2 text-sm outline-none transition focus:border-primary"
+            />
+          </label>
+          <div className="flex items-center gap-1 rounded-lg bg-secondary/40 p-1">
+            <button
+              type="button"
+              onClick={() => setView("all")}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${view === "all" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
             >
-              <div className="relative aspect-video overflow-hidden">
-                <img
-                  src={v.thumbnail}
-                  alt={v.title}
-                  loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/20 to-transparent" />
-                <div
-                  className="absolute inset-0 grid place-items-center opacity-0 transition-opacity group-hover:opacity-100"
-                  style={{ background: "oklch(0.13 0.06 295 / 0.6)" }}
-                >
-                  <div
-                    className="grid h-16 w-16 place-items-center rounded-full"
-                    style={{
-                      background: "var(--gradient-neon)",
-                      boxShadow: "var(--glow-primary)",
-                    }}
-                  >
-                    <Play className="h-7 w-7 fill-primary-foreground text-primary-foreground" />
-                  </div>
-                </div>
-              </div>
-              <div className="p-4">
-                <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-foreground group-hover:text-primary">
-                  {v.title}
-                </h3>
-                <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Eye className="h-3 w-3" />
-                    {formatViews(v.views)}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Star className="h-3 w-3 fill-accent text-accent" />
-                    {v.rating || "—"}
-                  </span>
-                </div>
-              </div>
-            </Link>
-          ))}
+              الكل
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("saved")}
+              className={`flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition ${view === "saved" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <Bookmark className="h-3.5 w-3.5" />
+              المفضلة ({savedIds.length})
+            </button>
+          </div>
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortMode)}
+            className="rounded-lg border border-border bg-secondary/40 px-3 py-2 text-sm outline-none focus:border-primary"
+          >
+            <option value="newest">الأحدث</option>
+            <option value="views">الأكثر مشاهدة</option>
+          </select>
+          <span
+            className="flex items-center gap-1 text-xs text-muted-foreground"
+            title={`آخر تحديث: ${new Date(lastSync).toLocaleTimeString()}`}
+          >
+            <RefreshCcw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
+            {refreshing ? "جاري المزامنة…" : "مشاهدات حية"}
+          </span>
         </div>
+
+        {pageVideos.length === 0 ? (
+          <p className="py-16 text-center text-sm text-muted-foreground">
+            {view === "saved" ? "لا توجد فيديوهات محفوظة بعد. اضغط على الإشارة المرجعية لإضافة فيديو." : "لا توجد نتائج مطابقة."}
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {pageVideos.map((v: Video) => {
+              const saved = isSaved(v.id);
+              return (
+                <div key={v.id} className="cyber-border group relative block overflow-hidden rounded-xl">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      toggleSaved(v.id);
+                    }}
+                    aria-label={saved ? "إزالة من المفضلة" : "حفظ للمشاهدة لاحقاً"}
+                    className="absolute right-2 top-2 z-10 grid h-9 w-9 place-items-center rounded-full bg-background/70 backdrop-blur transition hover:bg-background"
+                  >
+                    {saved ? (
+                      <BookmarkCheck className="h-4 w-4 text-accent" />
+                    ) : (
+                      <Bookmark className="h-4 w-4 text-foreground" />
+                    )}
+                  </button>
+                  <Link
+                    to="/watch/$videoId"
+                    params={{ videoId: v.id }}
+                    className="block"
+                  >
+                    <div className="relative aspect-video overflow-hidden">
+                      <img
+                        src={v.thumbnail}
+                        alt={v.title}
+                        loading="lazy"
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/20 to-transparent" />
+                      <div
+                        className="absolute inset-0 grid place-items-center opacity-0 transition-opacity group-hover:opacity-100"
+                        style={{ background: "oklch(0.13 0.06 295 / 0.6)" }}
+                      >
+                        <div
+                          className="grid h-16 w-16 place-items-center rounded-full"
+                          style={{
+                            background: "var(--gradient-neon)",
+                            boxShadow: "var(--glow-primary)",
+                          }}
+                        >
+                          <Play className="h-7 w-7 fill-primary-foreground text-primary-foreground" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-foreground group-hover:text-primary">
+                        {v.title}
+                      </h3>
+                      <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          {formatViews(v.views)}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Star className="h-3 w-3 fill-accent text-accent" />
+                          {v.rating || "—"}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {totalPages > 1 && (
           <nav
@@ -267,7 +447,6 @@ function Index() {
           </nav>
         )}
       </section>
-
 
       <footer className="border-t border-border/50 py-8 text-center text-sm text-muted-foreground">
         <p>

@@ -29,8 +29,29 @@ function WatchPage() {
   const current = videos.find((v: Video) => v.id === videoId) ?? videos[0];
   const related = videos.filter((v: Video) => v.id !== current.id).slice(0, 8);
 
+  const videoLd = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    name: current.title,
+    description: current.description || current.title,
+    thumbnailUrl: [current.thumbnail],
+    uploadDate: current.published || new Date().toISOString(),
+    contentUrl: `https://www.youtube.com/watch?v=${current.id}`,
+    embedUrl: `https://www.youtube.com/embed/${current.id}`,
+    interactionStatistic: {
+      "@type": "InteractionCounter",
+      interactionType: { "@type": "WatchAction" },
+      userInteractionCount: parseInt(current.views || "0", 10),
+    },
+    publisher: {
+      "@type": "Organization",
+      name: channelTitle,
+    },
+  });
+
   return (
     <div dir="rtl" className="min-h-screen">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: videoLd }} />
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl">
         <div className="container mx-auto flex items-center justify-between px-4 py-4">
           <Link to="/" className="flex items-center gap-2 text-sm font-semibold text-primary hover:text-accent">
