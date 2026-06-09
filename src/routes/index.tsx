@@ -17,10 +17,13 @@ import {
   RefreshCcw,
 } from "lucide-react";
 import { AdBanner } from "@/components/AdBanner";
+import { AnimatedViews } from "@/components/AnimatedViews";
 import { useWatchLater } from "@/lib/watch-later";
 
 const PAGE_SIZE = 12;
-const REFRESH_MS = 5 * 60 * 1000;
+// Aggressive sync while the tab is visible; back off in the background.
+const REFRESH_MS_ACTIVE = 60 * 1000;
+const REFRESH_MS_IDLE = 5 * 60 * 1000;
 
 type Search = { lang: "ar" | "en" };
 
@@ -73,38 +76,78 @@ function Index() {
 
   useEffect(() => {
     let cancelled = false;
-    const refresh = async () => {
-      try {
-        setRefreshing(true);
-        const fresh = await getChannelVideos({ data: { lang } });
-        if (!cancelled && fresh?.videos?.length) {
-          setData((prev: typeof initial) => {
-            const map = new Map<string, Video>(fresh.videos.map((v: Video) => [v.id, v] as const));
-            const merged = prev.videos.map((v: Video) => {
-              const updated = map.get(v.id);
-              return updated ? { ...v, views: updated.views, title: updated.title, thumbnail: updated.thumbnail } : v;
+    let timer: number | null = null;
+    let inflight: Promise<void> | null = null;
+
+    const refresh = (): Promise<void> => {
+      if (inflight) return inflight;
+      inflight = (async () => {
+        try {
+          setRefreshing(true);
+          const fresh = await getChannelVideos({ data: { lang } });
+          if (!cancelled && fresh?.videos?.length) {
+            setData((prev: typeof initial) => {
+              const map = new Map<string, Video>(
+                fresh.videos.map((v: Video) => [v.id, v] as const)
+              );
+              const merged = prev.videos.map((v: Video) => {
+                const updated = map.get(v.id);
+                if (!updated) return v;
+                // Only bump views forward — never let scrape jitter drop the count below the last seen value.
+                const prevN = parseInt(v.views || "0", 10);
+                const nextN = parseInt(updated.views || "0", 10);
+                const views = nextN >= prevN ? updated.views : v.views;
+                return {
+                  ...v,
+                  views,
+                  title: updated.title,
+                  thumbnail: updated.thumbnail,
+                };
+              });
+              const existing = new Set(prev.videos.map((v: Video) => v.id));
+              const newOnes = fresh.videos.filter((v: Video) => !existing.has(v.id));
+              return { ...prev, videos: [...newOnes, ...merged] };
             });
-            const existing = new Set(prev.videos.map((v: Video) => v.id));
-            const newOnes = fresh.videos.filter((v: Video) => !existing.has(v.id));
-            return { ...prev, videos: [...newOnes, ...merged] };
-          });
-          setLastSync(Date.now());
+            setLastSync(Date.now());
+          }
+        } catch {
+          // ignore
+        } finally {
+          if (!cancelled) setRefreshing(false);
+          inflight = null;
         }
-      } catch {
-        // ignore
-      } finally {
-        if (!cancelled) setRefreshing(false);
+      })();
+      return inflight;
+    };
+
+    const schedule = () => {
+      if (timer) window.clearTimeout(timer);
+      const delay =
+        typeof document !== "undefined" && document.visibilityState === "visible"
+          ? REFRESH_MS_ACTIVE
+          : REFRESH_MS_IDLE;
+      timer = window.setTimeout(async () => {
+        await refresh();
+        if (!cancelled) schedule();
+      }, delay);
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        refresh();
+        schedule();
       }
     };
-    const id = window.setInterval(refresh, REFRESH_MS);
-    const onFocus = () => {
-      if (Date.now() - lastSync > 60_000) refresh();
-    };
-    window.addEventListener("focus", onFocus);
+    const onOnline = () => refresh();
+
+    schedule();
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("online", onOnline);
     return () => {
       cancelled = true;
-      window.clearInterval(id);
-      window.removeEventListener("focus", onFocus);
+      if (timer) window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("online", onOnline);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
@@ -248,7 +291,7 @@ function Index() {
               <div className="mb-4 flex flex-wrap gap-3 text-sm">
                 <span className="flex items-center gap-1.5 rounded-full bg-secondary/60 px-3 py-1">
                   <Eye className="h-3.5 w-3.5 text-accent" />
-                  {formatViews(featured.views)} مشاهدة
+                  <AnimatedViews value={featured.views} /> مشاهدة
                 </span>
                 <span className="flex items-center gap-1.5 rounded-full bg-secondary/60 px-3 py-1">
                   <Star className="h-3.5 w-3.5 fill-accent text-accent" />
@@ -382,7 +425,7 @@ function Index() {
                       <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Eye className="h-3 w-3" />
-                          {formatViews(v.views)}
+                          <AnimatedViews value={v.views} />
                         </span>
                         <span className="flex items-center gap-1">
                           <Star className="h-3 w-3 fill-accent text-accent" />
