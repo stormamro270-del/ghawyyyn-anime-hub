@@ -80,10 +80,11 @@ function WatchPage() {
             <div className="aspect-video w-full">
               <iframe
                 key={current.id}
-                src={`https://www.youtube.com/embed/${current.id}?autoplay=1`}
+                src={`https://www.youtube-nocookie.com/embed/${current.id}?rel=0&modestbranding=1&playsinline=1`}
                 title={current.title}
                 className="h-full w-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
               />
             </div>
