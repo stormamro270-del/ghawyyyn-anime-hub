@@ -14,11 +14,24 @@ export type Video = {
 };
 
 function parseViews(text: string): string {
-  const m = text.match(/([\d.,]+)\s*([KMB]?)/i);
+  if (!text) return "0";
+  // Normalize Arabic-Indic and Persian digits to ASCII, and Arabic decimal/thousand separators.
+  let t = text
+    .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06F0))
+    .replace(/\u066B/g, ".") // Arabic decimal separator
+    .replace(/\u066C/g, ","); // Arabic thousands separator
+
+  // Detect unit by language (Arabic or English).
+  let mult = 1;
+  if (/مليار|B\b/i.test(t)) mult = 1e9;
+  else if (/مليون|M\b/i.test(t)) mult = 1e6;
+  else if (/ألف|الف|K\b/i.test(t)) mult = 1e3;
+
+  const m = t.match(/([\d.,]+)/);
   if (!m) return "0";
   const num = parseFloat(m[1].replace(/,/g, ""));
-  const s = m[2].toUpperCase();
-  const mult = s === "B" ? 1e9 : s === "M" ? 1e6 : s === "K" ? 1e3 : 1;
+  if (!isFinite(num)) return "0";
   return Math.round(num * mult).toString();
 }
 
