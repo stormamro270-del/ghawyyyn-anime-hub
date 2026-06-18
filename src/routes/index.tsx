@@ -421,10 +421,25 @@ function Index() {
                     className="block"
                   >
                     <div className="relative aspect-video overflow-hidden">
+                      {!loadedThumbs.has(v.id) && (
+                        <div className="absolute inset-0 z-10 grid place-items-center bg-background/80 backdrop-blur-sm">
+                          <img
+                            src={animeLoadingAsset.url}
+                            alt="جاري التحميل..."
+                            width={120}
+                            height={120}
+                            className="animate-bounce"
+                            style={{ animationDuration: "2s" }}
+                          />
+                        </div>
+                      )}
                       <img
                         src={v.thumbnail}
                         alt={v.title}
                         loading="lazy"
+                        onLoad={() =>
+                          setLoadedThumbs((prev) => new Set(prev).add(v.id))
+                        }
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/20 to-transparent" />
