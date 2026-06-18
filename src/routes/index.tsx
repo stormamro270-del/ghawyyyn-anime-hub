@@ -19,6 +19,7 @@ import {
 import { AdBanner } from "@/components/AdBanner";
 import { AnimatedViews } from "@/components/AnimatedViews";
 import { useWatchLater } from "@/lib/watch-later";
+import animeLoadingAsset from "@/assets/anime-loading.png.asset.json";
 
 const PAGE_SIZE = 12;
 // Aggressive sync while the tab is visible; back off in the background.
