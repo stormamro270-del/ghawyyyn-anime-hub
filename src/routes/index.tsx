@@ -19,6 +19,7 @@ import {
 import { AdBanner } from "@/components/AdBanner";
 import { AnimatedViews } from "@/components/AnimatedViews";
 import { useWatchLater } from "@/lib/watch-later";
+import animeLoadingAsset from "@/assets/anime-loading.png.asset.json";
 
 const PAGE_SIZE = 12;
 // Aggressive sync while the tab is visible; back off in the background.
@@ -33,6 +34,7 @@ export const Route = createFileRoute("/")({
   }),
   loaderDeps: ({ search }) => ({ lang: search.lang }),
   loader: ({ deps }) => getChannelVideos({ data: { lang: deps.lang } }),
+  pendingComponent: LoadingScreen,
   component: Index,
   head: () => ({
     meta: [
@@ -50,6 +52,28 @@ export const Route = createFileRoute("/")({
     ],
   }),
 });
+
+function LoadingScreen() {
+  return (
+    <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center gap-6">
+      <div className="relative">
+        <div
+          className="absolute inset-0 rounded-full blur-2xl"
+          style={{ background: "var(--gradient-neon)", opacity: 0.35 }}
+        />
+        <img
+          src={animeLoadingAsset.url}
+          alt="جاري التحميل..."
+          width={280}
+          height={280}
+          className="relative z-10 animate-bounce"
+          style={{ animationDuration: "2s" }}
+        />
+      </div>
+      <p className="text-lg font-bold text-primary">جاري تحميل الفيديوهات...</p>
+    </div>
+  );
+}
 
 function formatViews(v: string) {
   const n = parseInt(v || "0", 10);
@@ -160,6 +184,7 @@ function Index() {
   const [view, setView] = useState<ViewMode>("all");
   const [sort, setSort] = useState<SortMode>("newest");
   const [page, setPage] = useState(1);
+  const [loadedThumbs, setLoadedThumbs] = useState<Set<string>>(new Set());
   const { ids: savedIds, toggle: toggleSaved, has: isSaved } = useWatchLater();
 
   useEffect(() => {
@@ -396,10 +421,25 @@ function Index() {
                     className="block"
                   >
                     <div className="relative aspect-video overflow-hidden">
+                      {!loadedThumbs.has(v.id) && (
+                        <div className="absolute inset-0 z-10 grid place-items-center bg-background/80 backdrop-blur-sm">
+                          <img
+                            src={animeLoadingAsset.url}
+                            alt="جاري التحميل..."
+                            width={120}
+                            height={120}
+                            className="animate-bounce"
+                            style={{ animationDuration: "2s" }}
+                          />
+                        </div>
+                      )}
                       <img
                         src={v.thumbnail}
                         alt={v.title}
                         loading="lazy"
+                        onLoad={() =>
+                          setLoadedThumbs((prev) => new Set(prev).add(v.id))
+                        }
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/20 to-transparent" />
