@@ -34,6 +34,7 @@ export const Route = createFileRoute("/")({
   }),
   loaderDeps: ({ search }) => ({ lang: search.lang }),
   loader: ({ deps }) => getChannelVideos({ data: { lang: deps.lang } }),
+  pendingComponent: LoadingScreen,
   component: Index,
   head: () => ({
     meta: [
