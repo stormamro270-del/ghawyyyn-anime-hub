@@ -53,6 +53,28 @@ export const Route = createFileRoute("/")({
   }),
 });
 
+function LoadingScreen() {
+  return (
+    <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center gap-6">
+      <div className="relative">
+        <div
+          className="absolute inset-0 rounded-full blur-2xl"
+          style={{ background: "var(--gradient-neon)", opacity: 0.35 }}
+        />
+        <img
+          src={animeLoadingAsset.url}
+          alt="جاري التحميل..."
+          width={280}
+          height={280}
+          className="relative z-10 animate-bounce"
+          style={{ animationDuration: "2s" }}
+        />
+      </div>
+      <p className="text-lg font-bold text-primary">جاري تحميل الفيديوهات...</p>
+    </div>
+  );
+}
+
 function formatViews(v: string) {
   const n = parseInt(v || "0", 10);
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
