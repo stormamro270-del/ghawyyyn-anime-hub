@@ -184,6 +184,7 @@ function Index() {
   const [view, setView] = useState<ViewMode>("all");
   const [sort, setSort] = useState<SortMode>("newest");
   const [page, setPage] = useState(1);
+  const [loadedThumbs, setLoadedThumbs] = useState<Set<string>>(new Set());
   const { ids: savedIds, toggle: toggleSaved, has: isSaved } = useWatchLater();
 
   useEffect(() => {
