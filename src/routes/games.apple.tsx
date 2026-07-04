@@ -10,6 +10,12 @@ export const Route = createFileRoute("/games/apple")({
     meta: [
       { title: "التفاحة 2048 — غاويين انمى" },
       { name: "description", content: "ادمج التفاحات للوصول للرقم 2048 بستايل أنمي." },
+      { property: "og:title", content: "التفاحة 2048 — غاويين انمى" },
+      { property: "og:description", content: "ادمج التفاحات للوصول للرقم 2048 بستايل أنمي." },
+      { property: "og:url", content: "https://ghawyyyn-anime-hub.lovable.app/games/apple" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://ghawyyyn-anime-hub.lovable.app/games/apple" },
     ],
   }),
 });

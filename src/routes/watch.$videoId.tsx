@@ -5,15 +5,32 @@ import { ArrowRight, Eye, Star, Youtube } from "lucide-react";
 export const Route = createFileRoute("/watch/$videoId")({
   loader: () => getChannelVideos(),
   component: WatchPage,
-  head: ({ params }) => ({
-    meta: [
-      { title: `مشاهدة — غاويين انمى` },
-      {
-        name: "description",
-        content: `شاهد الفيديو ${params.videoId} على غاويين انمى.`,
-      },
-    ],
-  }),
+  head: ({ params, loaderData }) => {
+    const current =
+      loaderData?.videos?.find((v: Video) => v.id === params.videoId) ??
+      loaderData?.videos?.[0];
+    const title = current?.title ? `${current.title} — غاويين انمى` : `مشاهدة — غاويين انمى`;
+    const desc =
+      current?.description?.slice(0, 160) ||
+      `شاهد ${current?.title || "الفيديو"} على غاويين انمى.`;
+    return {
+      meta: [
+        { title },
+        { name: "description", content: desc },
+        { property: "og:title", content: title },
+        { property: "og:description", content: desc },
+        { property: "og:type", content: "video.other" },
+        { property: "og:url", content: `https://ghawyyyn-anime-hub.lovable.app/watch/${params.videoId}` },
+        { property: "og:image", content: current?.thumbnail || "" },
+      ],
+      links: [
+        {
+          rel: "canonical",
+          href: `https://ghawyyyn-anime-hub.lovable.app/watch/${params.videoId}`,
+        },
+      ],
+    };
+  },
 });
 
 function formatViews(v: string) {
