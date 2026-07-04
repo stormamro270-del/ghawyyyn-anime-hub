@@ -17,6 +17,10 @@ export const Route = createFileRoute("/games/")({
         property: "og:description",
         content: "مجموعة ألعاب صغيرة بستايل أنمي سايبربانك.",
       },
+      { property: "og:url", content: "https://ghawyyyn-anime-hub.lovable.app/games" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://ghawyyyn-anime-hub.lovable.app/games" },
     ],
   }),
 });

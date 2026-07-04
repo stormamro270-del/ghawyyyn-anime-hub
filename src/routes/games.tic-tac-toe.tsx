@@ -10,6 +10,12 @@ export const Route = createFileRoute("/games/tic-tac-toe")({
     meta: [
       { title: "إكس أو — غاويين انمى" },
       { name: "description", content: "العب إكس أو بستايل أنمي سايبربانك." },
+      { property: "og:title", content: "إكس أو — غاويين انمى" },
+      { property: "og:description", content: "العب إكس أو بستايل أنمي سايبربانك." },
+      { property: "og:url", content: "https://ghawyyyn-anime-hub.lovable.app/games/tic-tac-toe" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://ghawyyyn-anime-hub.lovable.app/games/tic-tac-toe" },
     ],
   }),
 });

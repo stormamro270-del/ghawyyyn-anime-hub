@@ -11,6 +11,12 @@ export const Route = createFileRoute("/games/snake")({
     meta: [
       { title: "ثعبان الجري — غاويين انمى" },
       { name: "description", content: "اقفز فوق الفخاخ واجمع التفاح في لعبة ثعبان الجري بستايل أنمي كيوت." },
+      { property: "og:title", content: "ثعبان الجري — غاويين انمى" },
+      { property: "og:description", content: "اقفز فوق الفخاخ واجمع التفاح في لعبة ثعبان الجري بستايل أنمي كيوت." },
+      { property: "og:url", content: "https://ghawyyyn-anime-hub.lovable.app/games/snake" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://ghawyyyn-anime-hub.lovable.app/games/snake" },
     ],
   }),
 });
