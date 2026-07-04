@@ -84,8 +84,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "غاويين انمى" },
       { name: "twitter:description", content: "ملخصات أنمي ومانهوا + ألعاب أنمي بسيطة" },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/RkgauelDtdhhpy3TiZlIkS7rk852/social-images/social-1779678706396-channels4_profile.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/RkgauelDtdhhpy3TiZlIkS7rk852/social-images/social-1779678706396-channels4_profile.webp" },
+      // og:image removed from root — added per-leaf route instead
     ],
     links: [
       {
