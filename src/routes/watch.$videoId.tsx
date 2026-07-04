@@ -21,6 +21,7 @@ export const Route = createFileRoute("/watch/$videoId")({
         { property: "og:description", content: desc },
         { property: "og:type", content: "video.other" },
         { property: "og:url", content: `https://ghawyyyn-anime-hub.lovable.app/watch/${params.videoId}` },
+        { property: "og:image", content: current?.thumbnail || "" },
       ],
       links: [
         {
