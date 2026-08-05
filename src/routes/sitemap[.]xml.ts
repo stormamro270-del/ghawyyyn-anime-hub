@@ -36,13 +36,10 @@ export const Route = createFileRoute("/sitemap.xml")({
           // If video fetch fails, serve sitemap with static pages only
         }
 
-        const today = new Date().toISOString().split("T")[0];
-
         const urls = entries.map((e) =>
           [
             `  <url>`,
             `    <loc>${BASE_URL}${e.path}</loc>`,
-            `    <lastmod>${today}</lastmod>`,
             e.changefreq ? `    <changefreq>${e.changefreq}</changefreq>` : null,
             e.priority ? `    <priority>${e.priority}</priority>` : null,
             `  </url>`,
