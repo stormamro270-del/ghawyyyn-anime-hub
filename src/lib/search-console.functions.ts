@@ -96,7 +96,23 @@ export const getSearchConsoleStats = createServerFn({ method: "GET" }).handler(
       }>(
         `/webmasters/v3/sites/${encodeURIComponent(SITE_URL)}/sitemaps/${encodeURIComponent(SITEMAP_URL)}`,
         "GET",
-      ).catch(() => ({ entries: 0, isPending: false, warnings: 0, errors: 0 })),
+      ).catch(
+        () =>
+          ({
+            entries: 0,
+            isPending: false,
+            lastDownloaded: undefined,
+            warnings: 0,
+            errors: 0,
+          } as {
+            entries?: number;
+            isPending?: boolean;
+            lastDownloaded?: string;
+            warnings?: number;
+            errors?: number;
+          }),
+      ),
+
 
       gscFetch<{
         inspectionResult?: {
