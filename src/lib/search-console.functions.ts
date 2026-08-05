@@ -88,30 +88,31 @@ export const getSearchConsoleStats = createServerFn({ method: "GET" }).handler(
 
     const [sitemapStatus, inspection, totals, queries, pages] = await Promise.all([
       gscFetch<{
-        entries?: number;
+        contents?: Array<{ type?: string; submitted?: string; indexed?: string }>;
         isPending?: boolean;
         lastDownloaded?: string;
-        warnings?: number;
-        errors?: number;
+        warnings?: string;
+        errors?: string;
       }>(
         `/webmasters/v3/sites/${encodeURIComponent(SITE_URL)}/sitemaps/${encodeURIComponent(SITEMAP_URL)}`,
         "GET",
       ).catch(
         () =>
           ({
-            entries: 0,
+            contents: undefined,
             isPending: false,
             lastDownloaded: undefined,
-            warnings: 0,
-            errors: 0,
+            warnings: "0",
+            errors: "0",
           } as {
-            entries?: number;
+            contents?: Array<{ type?: string; submitted?: string; indexed?: string }>;
             isPending?: boolean;
             lastDownloaded?: string;
-            warnings?: number;
-            errors?: number;
+            warnings?: string;
+            errors?: string;
           }),
       ),
+
 
 
       gscFetch<{
