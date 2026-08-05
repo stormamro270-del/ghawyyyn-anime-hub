@@ -30,8 +30,11 @@ interface SearchConsoleDashboardProps {
 
 export function SearchConsoleDashboard({ stats }: SearchConsoleDashboardProps) {
   const isIndexed =
-    stats.homepageInspection.verdict === "INDEXING_ALLOWED" ||
-    stats.homepageInspection.coverageState?.toLowerCase().includes("indexed");
+    stats.homepageInspection.verdict === "INDEXING_ALLOWED" &&
+    (stats.homepageInspection.coverageState?.toLowerCase().includes("submitted and indexed") ||
+      stats.homepageInspection.coverageState?.toLowerCase().startsWith("indexed") ||
+      stats.homepageInspection.coverageState?.toLowerCase() === "indexed");
+
 
   return (
     <div className="space-y-6">
