@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Gamepad2, ArrowRight, Sparkles } from "lucide-react";
+import { Gamepad2, ArrowRight, Sparkles, BarChart3 } from "lucide-react";
 import { AdBanner } from "@/components/AdBanner";
 
 export const Route = createFileRoute("/games/")({
