@@ -15,6 +15,7 @@ import {
   Bookmark,
   BookmarkCheck,
   RefreshCcw,
+  BarChart3,
 } from "lucide-react";
 import { AdBanner } from "@/components/AdBanner";
 import { AnimatedViews } from "@/components/AnimatedViews";
@@ -253,6 +254,13 @@ function Index() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Link
+              to="/analytics"
+              className="flex items-center gap-2 rounded-lg bg-secondary px-3 py-2 text-sm font-semibold transition hover:bg-secondary/70"
+            >
+              <BarChart3 className="h-4 w-4" />
+              <span className="hidden sm:inline">إحصائيات</span>
+            </Link>
             <Link
               to="/"
               search={{ lang: lang === "ar" ? "en" : "ar" }}

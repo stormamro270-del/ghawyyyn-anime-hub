@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Gamepad2, ArrowRight, Sparkles } from "lucide-react";
+import { Gamepad2, ArrowRight, Sparkles, BarChart3 } from "lucide-react";
 import { AdBanner } from "@/components/AdBanner";
 
 export const Route = createFileRoute("/games/")({
@@ -66,13 +66,22 @@ function GamesPage() {
               <p className="text-xs text-muted-foreground">صالة الألعاب</p>
             </div>
           </Link>
-          <Link
-            to="/"
-            className="flex items-center gap-2 rounded-lg bg-secondary px-4 py-2 text-sm font-semibold transition hover:bg-secondary/70"
-          >
-            <ArrowRight className="h-4 w-4" />
-            الرئيسية
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/analytics"
+              className="flex items-center gap-2 rounded-lg bg-secondary px-3 py-2 text-sm font-semibold transition hover:bg-secondary/70"
+            >
+              <BarChart3 className="h-4 w-4" />
+              <span className="hidden sm:inline">إحصائيات</span>
+            </Link>
+            <Link
+              to="/"
+              className="flex items-center gap-2 rounded-lg bg-secondary px-4 py-2 text-sm font-semibold transition hover:bg-secondary/70"
+            >
+              <ArrowRight className="h-4 w-4" />
+              الرئيسية
+            </Link>
+          </div>
         </div>
       </header>
 
