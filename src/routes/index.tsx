@@ -15,6 +15,7 @@ import {
   Bookmark,
   BookmarkCheck,
   RefreshCcw,
+  BarChart3,
 } from "lucide-react";
 import { AdBanner } from "@/components/AdBanner";
 import { AnimatedViews } from "@/components/AnimatedViews";
