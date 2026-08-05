@@ -169,13 +169,16 @@ export const getSearchConsoleStats = createServerFn({ method: "GET" }).handler(
 
     const totalRow = totals.rows?.[0];
 
+    const webContents = sitemapStatus.contents?.find((c) => c.type === "web" || c.type === undefined);
+    const submittedUrls = webContents?.submitted ? parseInt(webContents.submitted, 10) : 0;
+
     return {
       sitemap: {
-        submittedUrls: sitemapStatus.entries ?? 0,
+        submittedUrls,
         isPending: sitemapStatus.isPending ?? false,
         lastDownloaded: sitemapStatus.lastDownloaded,
-        warnings: sitemapStatus.warnings ?? 0,
-        errors: sitemapStatus.errors ?? 0,
+        warnings: sitemapStatus.warnings ? parseInt(sitemapStatus.warnings, 10) : 0,
+        errors: sitemapStatus.errors ? parseInt(sitemapStatus.errors, 10) : 0,
       },
       homepageInspection: {
         verdict: inspection.inspectionResult?.indexStatusResult?.verdict ?? "UNKNOWN",
